@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin · Pagos | Ciphra</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=League+Spartan:wght@700;800;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --bg: #0B0B0D; --panel: #141418; --gold: #FBBF24; --teal: #14B8A6; --pink: #F472B6;
+            --text: #f1f1f1; --muted: rgba(255,255,255,0.55); --border: rgba(255,255,255,0.08);
+            --font-display: 'League Spartan', sans-serif; --font-body: 'Inter', sans-serif;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: var(--bg); color: var(--text); font-family: var(--font-body);
+               min-height: 100dvh; padding: 32px 20px; -webkit-font-smoothing: antialiased; }
+        .container { max-width: 760px; margin: 0 auto; }
+        .logo { font-family: var(--font-display); font-weight: 900; font-size: 1.5rem; letter-spacing: 0.04em;
+                display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+        .logo .accent { color: var(--gold); }
+        .subtitle { color: var(--muted); font-size: 0.9rem; margin-bottom: 2rem; }
+
+        .gate { background: var(--panel); border: 1px solid var(--border); border-radius: 18px; padding: 28px; max-width: 420px; }
+        .gate h2 { font-family: var(--font-display); font-weight: 800; margin-bottom: 1.2rem; }
+        .gate label { display: block; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 8px; }
+        input { width: 100%; background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+                border-radius: 12px; padding: 14px; color: var(--text); font-size: 1rem; outline: none; }
+        input:focus { border-color: var(--gold); }
+        .btn { background: var(--gold); color: #000; border: none; border-radius: 100px; padding: 12px 20px;
+               font-family: var(--font-display); font-weight: 800; cursor: pointer; display: inline-flex;
+               align-items: center; gap: 8px; transition: transform 0.15s ease; font-size: 0.95rem; }
+        .btn:hover { transform: translateY(-1px); }
+        .btn:active { transform: scale(0.98); }
+        .btn.full { width: 100%; justify-content: center; margin-top: 1.2rem; }
+        .btn i { width: 16px; height: 16px; }
+
+        .toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.2rem; }
+        .toolbar h2 { font-family: var(--font-display); font-weight: 800; font-size: 1.2rem; }
+        .btn.ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+        .btn.ghost:hover { color: var(--text); }
+
+        .item { background: var(--panel); border: 1px solid var(--border); border-radius: 16px;
+                padding: 18px 20px; margin-bottom: 12px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+        .item .info { flex: 1; min-width: 200px; }
+        .item .email { font-weight: 700; font-size: 1rem; }
+        .item .meta { color: var(--muted); font-size: 0.82rem; margin-top: 4px; display: flex; gap: 12px; flex-wrap: wrap; }
+        .ref { font-family: 'League Spartan', monospace; color: var(--gold); font-weight: 700; }
+        .badge { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.06em; padding: 3px 8px; border-radius: 100px; font-weight: 700; }
+        .badge.claimed { background: rgba(251,191,36,0.15); color: var(--gold); }
+        .badge.pending { background: rgba(255,255,255,0.08); color: var(--muted); }
+        .actions { display: flex; gap: 8px; }
+        .btn.approve { background: var(--teal); color: #001; padding: 9px 14px; font-size: 0.85rem; }
+        .btn.reject { background: rgba(244,114,182,0.15); color: var(--pink); padding: 9px 14px; font-size: 0.85rem; }
+
+        .empty { text-align: center; color: var(--muted); padding: 3rem 1rem; }
+        .empty i { width: 40px; height: 40px; opacity: 0.4; }
+        .hidden { display: none; }
+        @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo"><i data-lucide="shield" style="color:var(--gold)"></i> CIP<span class="accent">H</span>RA</div>
+        <div class="subtitle">Panel de pagos — aprobación de transferencias</div>
+
+        <!-- Gate -->
+        <div class="gate" id="gate">
+            <h2>Acceso admin</h2>
+            <label for="admintok">Token de admin</label>
+            <input type="password" id="admintok" placeholder="ADMIN_TOKEN" onkeydown="if(event.key==='Enter')enter()">
+            <button class="btn full" onclick="enter()"><i data-lucide="log-in"></i> Entrar</button>
+        </div>
+
+        <!-- Panel -->
+        <div id="panel" class="hidden">
+            <div class="toolbar">
+                <h2>Pagos pendientes</h2>
+                <div style="display:flex; gap:8px;">
+                    <button class="btn ghost" onclick="load()"><i data-lucide="refresh-cw"></i> Actualizar</button>
+                    <button class="btn ghost" onclick="logout()"><i data-lucide="log-out"></i> Salir</button>
+                </div>
+            </div>
+            <div id="list"></div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+        let TOKEN = sessionStorage.getItem('ciphra_admin_token') || '';
+        const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+        function enter() {
+            const v = document.getElementById('admintok').value.trim();
+            if (!v) return;
+            TOKEN = v; sessionStorage.setItem('ciphra_admin_token', v);
+            load();
+        }
+        function logout() { sessionStorage.removeItem('ciphra_admin_token'); TOKEN = '';
+            document.getElementById('panel').classList.add('hidden'); document.getElementById('gate').classList.remove('hidden'); }
+
+        async function load() {
+            try {
+                const res = await fetch('/api/payments/admin/pending', { headers: { 'X-Admin-Token': TOKEN } });
+                if (res.status === 401) { alert('Token inválido o panel deshabilitado (definí ADMIN_TOKEN en .env).'); return; }
+                const data = await res.json();
+                document.getElementById('gate').classList.add('hidden');
+                document.getElementById('panel').classList.remove('hidden');
+                render(data.pending || []);
+            } catch (e) { alert('Error de conexión.'); }
+        }
+
+        function render(items) {
+            const list = document.getElementById('list');
+            if (!items.length) {
+                list.innerHTML = '<div class="empty"><i data-lucide="inbox"></i><p style="margin-top:12px;">No hay pagos pendientes.</p></div>';
+                lucide.createIcons(); return;
+            }
+            list.innerHTML = items.map(it => `
+                <div class="item">
+                    <div class="info">
+                        <div class="email">${esc(it.email)}</div>
+                        <div class="meta">
+                            <span>Ref: <span class="ref">${esc(it.reference)}</span></span>
+                            <span>Monto: ${esc(it.amount)} ${esc(it.currency)}</span>
+                            <span class="badge ${it.status === 'claimed' ? 'claimed' : 'pending'}">${it.status === 'claimed' ? 'dijo que pagó' : 'sin reclamar'}</span>
+                        </div>
+                    </div>
+                    <div class="actions">
+                        <button class="btn approve" onclick="decide('approve','${esc(it.email)}')"><i data-lucide="check"></i> Aprobar</button>
+                        <button class="btn reject" onclick="decide('reject','${esc(it.email)}')"><i data-lucide="x"></i> Rechazar</button>
+                    </div>
+                </div>`).join('');
+            lucide.createIcons();
+        }
+
+        async function decide(action, email) {
+            if (action === 'approve' && !confirm('¿Confirmás que recibiste la transferencia de ' + email + '?')) return;
+            try {
+                const res = await fetch('/api/payments/admin/' + action, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-Admin-Token': TOKEN },
+                    body: JSON.stringify({ email })
+                });
+                const data = await res.json();
+                if (data.success) load();
+                else alert(data.error || 'Error');
+            } catch (e) { alert('Error de conexión.'); }
+        }
+
+        if (TOKEN) load();
+    </script>
+</body>
+</html>

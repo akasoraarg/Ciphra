@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ciphra · Presentación</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=League+Spartan:wght@700;800;900&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+:root{
+  --bg:#0B0B0D; --panel:#141418; --gold:#FBBF24; --gold2:#F59E0B;
+  --teal:#14B8A6; --pink:#F472B6; --text:#f1f1f1;
+  --muted:rgba(255,255,255,0.55); --border:rgba(255,255,255,0.08);
+  --disp:'League Spartan',sans-serif; --ui:'Inter',sans-serif;
+  --accent:var(--gold); --accent-rgb:251,191,36;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow:hidden;}
+body{background:var(--bg);color:var(--text);font-family:var(--ui);-webkit-font-smoothing:antialiased;}
+
+/* ===== Fondo ColorBends ===== */
+#colorBends{position:fixed;inset:0;z-index:0;opacity:0;transition:opacity .6s ease;pointer-events:none;}
+/* grain + viñeta como la landing */
+.fx-grain{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.05;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+.fx-vignette{position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:radial-gradient(120% 120% at 50% 40%,transparent 55%,rgba(0,0,0,.7) 100%);}
+
+/* ===== Stage / Slides ===== */
+.stage{position:fixed;inset:0;z-index:2;}
+.slide{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:7vh 6vw 16vh;opacity:0;visibility:hidden;transform:translateY(24px);
+  transition:opacity .55s ease,transform .55s ease;pointer-events:none;}
+.slide.active{opacity:1;visibility:visible;transform:translateY(0);pointer-events:auto;}
+.slide.no-anim{transition:none!important;}
+
+.kick{font-family:var(--disp);font-weight:800;letter-spacing:.16em;text-transform:uppercase;
+  font-size:.78rem;color:var(--accent);margin-bottom:1.6rem;}
+.slide h1{font-family:var(--disp);font-weight:900;line-height:.86;letter-spacing:-.03em;
+  font-size:clamp(3rem,9vw,8rem);margin-bottom:1.6rem;}
+.slide h1 .accent{background:linear-gradient(100deg,var(--accent),var(--gold2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+.slide h2{font-family:var(--disp);font-weight:800;font-size:clamp(2.2rem,5.5vw,4.2rem);line-height:1.02;margin-bottom:1.4rem;}
+.lead{font-size:clamp(1.05rem,1.8vw,1.4rem);color:var(--muted);max-width:680px;line-height:1.55;}
+.lead b{color:var(--text);font-weight:600;}
+.quote{font-family:var(--disp);font-weight:700;font-size:clamp(1.8rem,4vw,3rem);line-height:1.18;
+  max-width:860px;font-style:italic;}
+.quote-by{margin-top:1.6rem;color:var(--accent);font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:.82rem;}
+
+.badge-row{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:2.2rem;}
+.b-pill{display:inline-flex;align-items:center;gap:8px;border:1px solid rgba(var(--accent-rgb),.35);
+  background:rgba(var(--accent-rgb),.07);color:var(--text);border-radius:100px;padding:9px 16px;font-size:.86rem;font-weight:500;}
+.b-pill i{width:16px;height:16px;color:var(--accent);}
+
+.mod-icon{width:88px;height:88px;border-radius:24px;display:flex;align-items:center;justify-content:center;
+  background:rgba(var(--accent-rgb),.12);border:1px solid rgba(var(--accent-rgb),.3);margin-bottom:1.8rem;}
+.mod-icon i{width:42px;height:42px;color:var(--accent);}
+
+/* modos commander */
+.modes{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-top:2rem;}
+.mode{border:1px solid var(--border);background:var(--panel);border-radius:16px;padding:18px 22px;min-width:180px;text-align:left;}
+.mode .mn{font-family:var(--disp);font-weight:800;font-size:1rem;display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.mode .mn .dot{width:9px;height:9px;border-radius:50%;}
+.mode .md{color:var(--muted);font-size:.84rem;line-height:1.4;}
+
+/* equipo */
+.team{display:flex;gap:28px;flex-wrap:wrap;justify-content:center;margin-top:1rem;}
+.member{text-align:center;}
+.m-ava{width:96px;height:96px;border-radius:50%;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;
+  font-family:var(--disp);font-weight:900;font-size:2.2rem;color:#000;}
+.m-name{font-family:var(--disp);font-weight:800;font-size:1.2rem;}
+.m-role{color:var(--muted);font-size:.9rem;margin-top:2px;}
+
+/* lista de features/módulos (tarjetas en columna, texto a la izquierda) */
+.feature-list{display:flex;flex-direction:column;gap:14px;margin-top:1.8rem;max-width:720px;width:100%;text-align:left;}
+.feature-list .fl{display:flex;gap:16px;align-items:flex-start;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px 18px;}
+.feature-list .fl .fi{width:42px;height:42px;flex:none;border-radius:12px;display:flex;align-items:center;justify-content:center;
+  background:rgba(var(--accent-rgb),.12);border:1px solid rgba(var(--accent-rgb),.3);}
+.feature-list .fl .fi i{width:21px;height:21px;color:var(--accent);}
+.feature-list .fl .ft{font-family:var(--disp);font-weight:800;font-size:1.08rem;margin-bottom:3px;}
+.feature-list .fl .fd{color:var(--muted);font-size:.9rem;line-height:1.45;}
+
+/* lista numerada de temas (pills) */
+.topics{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:1.8rem;max-width:860px;}
+.topic{display:inline-flex;align-items:center;gap:10px;border:1px solid var(--border);background:var(--panel);
+  border-radius:100px;padding:10px 18px;font-size:.94rem;}
+.topic .tn{font-family:var(--disp);font-weight:900;color:var(--accent);}
+
+/* stack/tags del trabajo detrás */
+.stack-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:1.8rem;}
+.stack-tag{font-family:var(--disp);font-weight:800;letter-spacing:.04em;font-size:.82rem;text-transform:uppercase;
+  border:1px solid rgba(var(--accent-rgb),.35);background:rgba(var(--accent-rgb),.07);border-radius:8px;padding:8px 14px;}
+
+/* ===== Downbar ===== */
+.progress{position:fixed;top:0;left:0;height:3px;background:var(--accent);width:0;z-index:5;transition:width .4s ease,background .4s ease;}
+.downbar{position:fixed;left:0;right:0;bottom:0;z-index:5;display:flex;align-items:center;justify-content:center;gap:20px;
+  padding:16px 24px;background:linear-gradient(to top,rgba(11,11,13,.92),transparent);}
+.nav-btn{width:44px;height:44px;border-radius:50%;border:1px solid var(--border);background:var(--panel);color:var(--text);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s ease;}
+.nav-btn:hover{border-color:var(--accent);color:var(--accent);}
+.nav-btn:disabled{opacity:.3;cursor:not-allowed;}
+.nav-btn i{width:20px;height:20px;}
+.dots{display:flex;gap:9px;}
+.dot{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.2);cursor:pointer;transition:all .2s ease;}
+.dot.on{background:var(--accent);transform:scale(1.3);}
+.counter{font-family:var(--disp);font-weight:700;font-size:.9rem;color:var(--muted);min-width:54px;text-align:center;}
+
+/* tarjeta demo flotante (solo en slides de módulo) */
+.demo-card{position:fixed;left:50%;bottom:84px;transform:translateX(-50%) translateY(18px);z-index:6;
+  display:none;align-items:center;gap:14px;background:var(--panel);border:1px solid rgba(var(--accent-rgb),.4);
+  border-radius:16px;padding:12px 16px 12px 18px;box-shadow:0 18px 50px -16px rgba(0,0,0,.7);
+  opacity:0;transition:opacity .35s ease,transform .35s ease;max-width:calc(100vw - 32px);}
+.demo-card.show{display:flex;opacity:1;transform:translateX(-50%) translateY(0);}
+.demo-card .dc-txt{font-size:.86rem;color:var(--muted);}
+.demo-card .dc-txt b{color:var(--text);font-weight:600;}
+.demo-btn{display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:#1a1205;
+  font-family:var(--disp);font-weight:800;font-size:.86rem;letter-spacing:.02em;padding:10px 18px;border-radius:100px;
+  text-decoration:none;cursor:pointer;white-space:nowrap;transition:transform .15s ease;}
+.demo-btn:hover{transform:translateY(-2px);}
+.demo-btn i{width:16px;height:16px;}
+
+.hint{position:fixed;top:16px;left:18px;z-index:5;color:var(--muted);font-size:.74rem;display:flex;align-items:center;gap:6px;}
+.hint i{width:13px;height:13px;}
+
+@media (max-width:880px){
+  #colorBends{display:none;}
+  .demo-card{flex-direction:column;text-align:center;bottom:88px;}
+  .hint{display:none;}
+}
+@media (prefers-reduced-motion: reduce){
+  .slide,.demo-card,.progress{transition:none!important;}
+}
+</style>
+</head>
+<body>
+
+<div id="colorBends"></div>
+<div class="fx-grain"></div>
+<div class="fx-vignette"></div>
+
+<div class="hint"><i data-lucide="keyboard"></i> ← → para navegar</div>
+<div class="progress" id="progress"></div>
+
+<div class="stage" id="stage">
+
+  <!-- ============ HERO ============ -->
+  <section class="slide cover" data-accent="cmd">
+    <div class="kick">Ciphra · Taller</div>
+    <h1>Pensá<br><span class="accent">sin límites</span></h1>
+    <p class="lead">Una IA educativa hecha por estudiantes, para estudiantes. <b>Hoy vas a verla en vivo.</b></p>
+  </section>
+
+  <!-- ============ BLOQUE 1 · INTRO ============ -->
+
+  <!-- Portada Bloque 1 -->
+  <section class="slide cover" data-accent="cmd">
+    <div class="kick">Bloque 01</div>
+    <h1>Intro</h1>
+  </section>
+
+  <!-- Problema: las IAs "Yes Man" -->
+  <section class="slide" data-accent="cmd">
+    <div class="kick">El problema</div>
+    <h2>La forma de estudiar<br>se está deteriorando.</h2>
+    <p class="lead">Cada vez más alumnos recurren a las IAs <b>"Yes Man"</b>: modelos entrenados para darte la razón en todo, que validan tus errores en vez de corregirte. Y así no se aprende — te dan la ilusión de que comprendés, cuando solo <b>te aplauden los errores</b>.</p>
+  </section>
+
+  <!-- Nacimiento de Ciphra + mapa del día -->
+  <section class="slide" data-accent="cmd">
+    <div class="kick">Por eso nació Ciphra</div>
+    <h2>Una IA educativa para<br>quienes quieren aprender de verdad.</h2>
+    <p class="lead">Ciphra está pensada para estudiantes con dudas reales sobre una materia: no te aplaude, te hace pensar. Este es el mapa del día.</p>
+    <div class="badge-row">
+      <span class="b-pill"><i data-lucide="layers"></i> Lo que hicimos</span>
+      <span class="b-pill"><i data-lucide="cpu"></i> Cómo funciona una IA</span>
+      <span class="b-pill"><i data-lucide="play"></i> Pruebas en vivo</span>
+      <span class="b-pill"><i data-lucide="users"></i> Trabajo en grupo</span>
+    </div>
+  </section>
+
+  <!-- ============ BLOQUE 2 · LO QUE HICIMOS ============ -->
+
+  <!-- 3 módulos (overview) -->
+  <section class="slide" data-accent="cmd">
+    <div class="kick">Bloque 02 · Lo que hicimos</div>
+    <h2>Tres módulos<br>(y se vienen más).</h2>
+    <div class="feature-list">
+      <div class="fl">
+        <div class="fi"><i data-lucide="atom"></i></div>
+        <div><div class="ft">Quantum</div><div class="fd">Simplifica, explica y entiende fórmulas y teorías matemáticas que sube el usuario.</div></div>
+      </div>
+      <div class="fl">
+        <div class="fi"><i data-lucide="brain-circuit"></i></div>
+        <div><div class="ft">MindShift</div><div class="fd">Analiza documentos y archivos largos y los convierte en un test 100% personalizable, solo con la info de ese archivo.</div></div>
+      </div>
+      <div class="fl">
+        <div class="fi"><i data-lucide="cpu"></i></div>
+        <div><div class="ft">Commander</div><div class="fd">Chatbot siempre a mano: hace apuntes sobre el tema o archivo que le des.</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ BLOQUE 3 · CÓMO FUNCIONA UNA IA ============ -->
+
+  <!-- Portada Bloque 3 -->
+  <section class="slide cover" data-accent="q">
+    <div class="kick">Bloque 03</div>
+    <h1>Cómo funciona<br><span class="accent">una IA</span></h1>
+  </section>
+
+  <!-- Explicación: patrones -->
+  <section class="slide" data-accent="q">
+    <div class="kick">La idea clave</div>
+    <h2>Una IA no piensa.</h2>
+    <p class="lead">Reconoce y reproduce <b>patrones</b> que aprendió de sus datos de entrenamiento. No entiende lo que dice: predice lo que estadísticamente sigue, basándose en todo lo que vio antes.</p>
+  </section>
+
+  <!-- Ejemplo del apretón de manos -->
+  <section class="slide" data-accent="q">
+    <div class="kick">El ejemplo del apretón de manos</div>
+    <h2>Pedile "dándose la mano izquierda".</h2>
+    <p class="lead">La IA falla y dibuja la <b>derecha</b>. ¿Por qué? Porque casi todas las imágenes que vio son de mano derecha: aprendió ese patrón como "lo normal" y le cuesta romperlo. Es <b>sesgo de datos</b>. La IA es un <b>espejo de sus datos</b>, no una mente creativa.</p>
+  </section>
+
+  <!-- ============ BLOQUE 4 · MÓDULOS EN DETALLE + EL TRABAJO DETRÁS ============ -->
+
+  <!-- MindShift (módulo · demo) -->
+  <section class="slide" data-module="mindshift_demo.html" data-modname="MindShift" data-accent="ms">
+    <div class="mod-icon"><i data-lucide="brain-circuit"></i></div>
+    <div class="kick">Bloque 04 · Módulo</div>
+    <h2>MindShift</h2>
+    <p class="lead">Subís un documento largo y lo convierte en un test 100% personalizable —múltiple choice, V/F, modo examen— usando <b>solo la info de ese archivo</b>. El aprendizaje activo, automatizado.</p>
+  </section>
+
+  <!-- Quantum (módulo · demo) -->
+  <section class="slide" data-module="quantum_demo.html" data-modname="Quantum" data-accent="q">
+    <div class="mod-icon"><i data-lucide="atom"></i></div>
+    <div class="kick">Bloque 04 · Módulo</div>
+    <h2>Quantum</h2>
+    <p class="lead">Simplifica, explica y entiende las fórmulas y teorías matemáticas que subís. Método socrático: no te da la respuesta, te guía para que la descubras, con notación LaTeX en alta definición.</p>
+  </section>
+
+  <!-- Commander (módulo · demo) -->
+  <section class="slide" data-module="commander_demo.html" data-modname="Commander" data-accent="cmd">
+    <div class="mod-icon"><i data-lucide="cpu"></i></div>
+    <div class="kick">Bloque 04 · Módulo</div>
+    <h2>Commander</h2>
+    <p class="lead">El asistente central: hace apuntes sobre el tema o archivo que le des. Tres motores de razonamiento según lo que necesites:</p>
+    <div class="modes">
+      <div class="mode"><div class="mn"><span class="dot" style="background:#7db87a"></span>SYNAPSE</div><div class="md">Ultraveloz, baja latencia. Para el día a día.</div></div>
+      <div class="mode"><div class="mn"><span class="dot" style="background:#f0b429"></span>APEX</div><div class="md">Código y arquitecturas complejas.</div></div>
+      <div class="mode"><div class="mn"><span class="dot" style="background:#8b5cf6"></span>ETHOS</div><div class="md">Razonamiento profundo y matemáticas.</div></div>
+    </div>
+  </section>
+
+  <!-- El trabajo detrás -->
+  <section class="slide" data-accent="cmd">
+    <div class="kick">El trabajo detrás</div>
+    <h2>Lo que no se ve.</h2>
+    <p class="lead">Detrás de cada módulo hay decisiones técnicas, pruebas y errores. Estos son los ladrillos —y los desafíos— de construir Ciphra.</p>
+    <div class="stack-row">
+      <span class="stack-tag">Python</span>
+      <span class="stack-tag">Flask / FastAPI</span>
+      <span class="stack-tag">HTML / CSS</span>
+      <span class="stack-tag">IA</span>
+    </div>
+    <p class="lead" style="margin-top:1.6rem;font-size:1rem">El desafío más grande: que la IA <b>guíe en vez de resolver</b>, y que cada respuesta salga solo del material del estudiante.</p>
+  </section>
+
+  <!-- ============ BLOQUE 5 · PRUEBAS EN VIVO ============ -->
+
+  <!-- Portada Bloque 5 (lista las 3 pruebas) -->
+  <section class="slide cover" data-accent="cmd">
+    <div class="kick">Bloque 05</div>
+    <h1>Pruebas <span class="accent">en vivo</span></h1>
+    <div class="feature-list">
+      <div class="fl">
+        <div class="fi"><i data-lucide="atom"></i></div>
+        <div><div class="ft">Quantum · La fórmula del público</div><div class="fd">La audiencia propone, se vota a mano alzada y la resolvemos en vivo.</div></div>
+      </div>
+      <div class="fl">
+        <div class="fi"><i data-lucide="brain-circuit"></i></div>
+        <div><div class="ft">MindShift · El tema más votado</div><div class="fd">Se vota a mano alzada un tema y generamos el test en vivo.</div></div>
+      </div>
+      <div class="fl">
+        <div class="fi"><i data-lucide="cpu"></i></div>
+        <div><div class="ft">Commander · Antesala del trabajo grupal</div><div class="fd">Cómo investigar un tema con Commander, paso a paso.</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ BLOQUE 6 · TRABAJO EN GRUPO ============ -->
+
+  <!-- Portada Bloque 6 -->
+  <section class="slide cover" data-accent="cmd">
+    <div class="kick">Bloque 06</div>
+    <h1>Trabajo<br><span class="accent">en grupo</span></h1>
+  </section>
+
+  <!-- Consigna: 5 grupos, 1 hora, 5 temas -->
+  <section class="slide" data-accent="cmd">
+    <div class="kick">La consigna</div>
+    <h2>5 grupos · 1 hora en Commander · después exponen.</h2>
+    <div class="topics">
+      <span class="topic"><span class="tn">1</span> ¿Cómo "piensa" una IA?</span>
+      <span class="topic"><span class="tn">2</span> La IA en el día a día</span>
+      <span class="topic"><span class="tn">3</span> El lado oscuro y los desafíos</span>
+      <span class="topic"><span class="tn">4</span> El futuro del trabajo y la educación</span>
+      <span class="topic"><span class="tn">5</span> La historia de la IA</span>
+    </div>
+  </section>
+
+  <!-- Cierre -->
+  <section class="slide cover" data-accent="cmd">
+    <p class="lead" style="margin-bottom:1.6rem">La IA es una herramienta para <b>aprender</b>, no para reemplazar el pensar.</p>
+    <h1>Pensá<br><span class="accent">sin límites</span></h1>
+    <div class="quote-by">Ciphra</div>
+  </section>
+
+</div>
+
+<!-- Tarjeta demo flotante -->
+<div class="demo-card" id="demoCard">
+  <span class="dc-txt">¿Querés verlo? <b id="dc-name">—</b> en vivo, con datos reales.</span>
+  <a class="demo-btn" id="dc-btn" onclick="launchDemo();return false;"><i data-lucide="play"></i> <span id="dc-label">Probar en vivo</span></a>
+</div>
+
+<!-- Downbar -->
+<div class="downbar">
+  <button class="nav-btn" id="prevBtn" onclick="prevSlide()" aria-label="Anterior"><i data-lucide="chevron-left"></i></button>
+  <div class="dots" id="dots"></div>
+  <span class="counter" id="counter">1 / 16</span>
+  <button class="nav-btn" id="nextBtn" onclick="nextSlide()" aria-label="Siguiente"><i data-lucide="chevron-right"></i></button>
+</div>
+
+<script>
+/* ===== Estado y referencias ===== */
+const slides = Array.from(document.querySelectorAll('.slide'));   // orden del documento = índice 0-based
+const ACCENTS = { ms:['20,184,166','#14B8A6'], q:['244,114,182','#F472B6'], cmd:['251,191,36','#FBBF24'] };
+let currentSlideIndex = 0;
+
+/* Aplica el color de acento de la slide a las variables CSS globales */
+function applyAccent(slide){
+  const key = slide.getAttribute('data-accent') || 'cmd';
+  const [rgb, hex] = ACCENTS[key] || ACCENTS.cmd;
+  document.documentElement.style.setProperty('--accent', hex);
+  document.documentElement.style.setProperty('--accent-rgb', rgb);
+}
+
+/* Muestra/oculta la tarjeta de demo según si la slide tiene un módulo asociado */
+function updateDemoCard(slide){
+  const card = document.getElementById('demoCard');
+  const mod = slide.getAttribute('data-module');
+  if(mod){
+    document.getElementById('dc-name').textContent = slide.getAttribute('data-modname') || 'Este módulo';
+    document.getElementById('dc-label').textContent = 'Probar ' + (slide.getAttribute('data-modname') || '') + ' en vivo';
+    card.classList.add('show');
+  } else {
+    card.classList.remove('show');
+  }
+}
+
+/* Navega a una slide. animate=false la usa la carga inicial (salto sin transición). */
+function goTo(index, animate){
+  if(animate === undefined) animate = true;
+  index = Math.max(0, Math.min(slides.length - 1, index));
+  slides.forEach((s, i) => {
+    s.classList.toggle('no-anim', !animate);
+    s.classList.toggle('active', i === index);
+  });
+  currentSlideIndex = index;
+  const slide = slides[index];
+  applyAccent(slide);
+  updateDemoCard(slide);
+
+  // Downbar
+  document.getElementById('counter').textContent = (index + 1) + ' / ' + slides.length;
+  document.getElementById('progress').style.width = ((index) / (slides.length - 1) * 100) + '%';
+  document.getElementById('prevBtn').disabled = index === 0;
+  document.getElementById('nextBtn').disabled = index === slides.length - 1;
+  document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('on', i === index));
+
+  // Fondo: 0.9 en las portadas de bloque (.cover), ~0.2 en las de contenido
+  const cb = document.getElementById('colorBends');
+  if(cb && cb.dataset.ready === '1') cb.style.opacity = slide.classList.contains('cover') ? '0.9' : '0.2';
+
+  if(window.lucide) lucide.createIcons();
+}
+
+function nextSlide(){ goTo(currentSlideIndex + 1); }
+function prevSlide(){ goTo(currentSlideIndex - 1); }
+
+/* Lanza la copia demo del módulo de la slide actual, pasando el índice en ?from= */
+function launchDemo(){
+  const slide = slides[currentSlideIndex];
+  const mod = slide.getAttribute('data-module');
+  if(!mod) return;
+  location.href = location.origin + '/' + mod + '?from=' + currentSlideIndex;
+}
+
+/* ===== Dots ===== */
+const dotsWrap = document.getElementById('dots');
+slides.forEach((s, i) => {
+  const d = document.createElement('div');
+  d.className = 'dot';
+  d.onclick = () => goTo(i);
+  dotsWrap.appendChild(d);
+});
+
+/* ===== Teclado ===== */
+document.addEventListener('keydown', e => {
+  if(e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); nextSlide(); }
+  else if(e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); prevSlide(); }
+  else if(e.key === 'Home') goTo(0);
+  else if(e.key === 'End') goTo(slides.length - 1);
+  else if(e.key === 'Enter') launchDemo();
+});
+
+/* ===== Carga: leer ?slide=N, saltar sin animación y limpiar la URL ===== */
+(function initFromUrl(){
+  const params = new URLSearchParams(location.search);
+  const raw = params.get('slide');
+  let start = 0;
+  if(raw !== null){
+    const n = parseInt(raw, 10);
+    if(!isNaN(n)) start = n;
+  }
+  goTo(start, false);
+  // re-habilitar animaciones tras el salto inicial
+  requestAnimationFrame(() => slides.forEach(s => s.classList.remove('no-anim')));
+  // limpiar la URL (saca ?slide=)
+  history.replaceState(null, '', location.origin + location.pathname);
+})();
+
+if(window.lucide) lucide.createIcons();
+</script>
+
+<!-- ===== COLOR BENDS (reactbits.dev, three.js shader background) — mismo que la landing ===== -->
+<script>
+function initColorBends(){
+  if(typeof THREE==='undefined')return;
+  const container=document.getElementById('colorBends');
+  if(!container)return;
+  if(window.innerWidth<=880){container.style.display='none';return;} // mobile: sin shader WebGL
+
+  const opts={
+    rotation:90, speed:0.2, autoRotate:4,
+    colors:['#FBBF24','#14B8A6','#F472B6','#F59E0B'],
+    transparent:true, scale:1, frequency:1, warpStrength:1,
+    mouseInfluence:1, parallax:0.5, noise:0.15,
+    iterations:1, intensity:2.2, bandWidth:5
+  };
+
+  const MAX_COLORS=8;
+  const vert=`
+varying vec2 vUv;
+void main(){ vUv=uv; gl_Position=vec4(position,1.0); }`;
+  const frag=`
+#define MAX_COLORS ${MAX_COLORS}
+uniform vec2 uCanvas;
+uniform float uTime;
+uniform float uSpeed;
+uniform vec2 uRot;
+uniform int uColorCount;
+uniform vec3 uColors[MAX_COLORS];
+uniform int uTransparent;
+uniform float uScale;
+uniform float uFrequency;
+uniform float uWarpStrength;
+uniform vec2 uPointer;
+uniform float uMouseInfluence;
+uniform float uParallax;
+uniform float uNoise;
+uniform int uIterations;
+uniform float uIntensity;
+uniform float uBandWidth;
+varying vec2 vUv;
+void main(){
+  float t=uTime*uSpeed;
+  vec2 p=vUv*2.0-1.0;
+  p+=uPointer*uParallax*0.1;
+  vec2 rp=vec2(p.x*uRot.x-p.y*uRot.y, p.x*uRot.y+p.y*uRot.x);
+  vec2 q=vec2(rp.x*(uCanvas.x/uCanvas.y), rp.y);
+  q/=max(uScale,0.0001);
+  q/=0.5+0.2*dot(q,q);
+  q+=0.2*cos(t)-7.56;
+  vec2 toward=(uPointer-rp);
+  q+=toward*uMouseInfluence*0.2;
+  for(int j=0;j<5;j++){
+    if(j>=uIterations-1)break;
+    vec2 rr=sin(1.5*(q.yx*uFrequency)+2.0*cos(q*uFrequency));
+    q+=(rr-q)*0.15;
+  }
+  vec3 col=vec3(0.0);
+  float a=1.0;
+  if(uColorCount>0){
+    vec2 s=q;
+    vec3 sumCol=vec3(0.0);
+    float cover=0.0;
+    for(int i=0;i<MAX_COLORS;++i){
+      if(i>=uColorCount)break;
+      s-=0.01;
+      vec2 r=sin(1.5*(s.yx*uFrequency)+2.0*cos(s*uFrequency));
+      float m0=length(r+sin(5.0*r.y*uFrequency-3.0*t+float(i))/4.0);
+      float kBelow=clamp(uWarpStrength,0.0,1.0);
+      float kMix=pow(kBelow,0.3);
+      float gain=1.0+max(uWarpStrength-1.0,0.0);
+      vec2 disp=(r-s)*kBelow;
+      vec2 warped=s+disp*gain;
+      float m1=length(warped+sin(5.0*warped.y*uFrequency-3.0*t+float(i))/4.0);
+      float m=mix(m0,m1,kMix);
+      float w=1.0-exp(-uBandWidth/exp(uBandWidth*m));
+      sumCol+=uColors[i]*w;
+      cover=max(cover,w);
+    }
+    col=clamp(sumCol,0.0,1.0);
+    a=uTransparent>0?cover:1.0;
+  }else{
+    vec2 s=q;
+    for(int k=0;k<3;++k){
+      s-=0.01;
+      vec2 r=sin(1.5*(s.yx*uFrequency)+2.0*cos(s*uFrequency));
+      float m0=length(r+sin(5.0*r.y*uFrequency-3.0*t+float(k))/4.0);
+      float kBelow=clamp(uWarpStrength,0.0,1.0);
+      float kMix=pow(kBelow,0.3);
+      float gain=1.0+max(uWarpStrength-1.0,0.0);
+      vec2 disp=(r-s)*kBelow;
+      vec2 warped=s+disp*gain;
+      float m1=length(warped+sin(5.0*warped.y*uFrequency-3.0*t+float(k))/4.0);
+      float m=mix(m0,m1,kMix);
+      col[k]=1.0-exp(-uBandWidth/exp(uBandWidth*m));
+    }
+    a=uTransparent>0?max(max(col.r,col.g),col.b):1.0;
+  }
+  col*=uIntensity;
+  if(uNoise>0.0001){
+    float n=fract(sin(dot(gl_FragCoord.xy+vec2(uTime),vec2(12.9898,78.233)))*43758.5453123);
+    col+=(n-0.5)*uNoise;
+    col=clamp(col,0.0,1.0);
+  }
+  vec3 rgb=(uTransparent>0)?col*a:col;
+  gl_FragColor=vec4(rgb,a);
+}`;
+
+  function toVec3(hex){
+    const h=hex.replace('#','').trim();
+    const v=h.length===3
+      ?[parseInt(h[0]+h[0],16),parseInt(h[1]+h[1],16),parseInt(h[2]+h[2],16)]
+      :[parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];
+    return new THREE.Vector3(v[0]/255,v[1]/255,v[2]/255);
+  }
+
+  const scene=new THREE.Scene();
+  const camera=new THREE.OrthographicCamera(-1,1,1,-1,0,1);
+  const geometry=new THREE.PlaneGeometry(2,2);
+  const uColorsArray=Array.from({length:MAX_COLORS},()=>new THREE.Vector3(0,0,0));
+  const colorVecs=opts.colors.filter(Boolean).slice(0,MAX_COLORS).map(toVec3);
+  for(let i=0;i<MAX_COLORS;i++){ if(i<colorVecs.length)uColorsArray[i].copy(colorVecs[i]); }
+
+  const material=new THREE.ShaderMaterial({
+    vertexShader:vert,
+    fragmentShader:frag,
+    uniforms:{
+      uCanvas:{value:new THREE.Vector2(1,1)},
+      uTime:{value:0},
+      uSpeed:{value:opts.speed},
+      uRot:{value:new THREE.Vector2(1,0)},
+      uColorCount:{value:colorVecs.length},
+      uColors:{value:uColorsArray},
+      uTransparent:{value:opts.transparent?1:0},
+      uScale:{value:opts.scale},
+      uFrequency:{value:opts.frequency},
+      uWarpStrength:{value:opts.warpStrength},
+      uPointer:{value:new THREE.Vector2(0,0)},
+      uMouseInfluence:{value:opts.mouseInfluence},
+      uParallax:{value:opts.parallax},
+      uNoise:{value:opts.noise},
+      uIterations:{value:opts.iterations},
+      uIntensity:{value:opts.intensity},
+      uBandWidth:{value:opts.bandWidth}
+    },
+    premultipliedAlpha:true,
+    transparent:true
+  });
+  scene.add(new THREE.Mesh(geometry,material));
+
+  let renderer;
+  try{
+    renderer=new THREE.WebGLRenderer({antialias:false,powerPreference:'high-performance',alpha:true});
+  }catch(e){ container.style.display='none'; return; }
+  if('outputColorSpace' in renderer && THREE.SRGBColorSpace) renderer.outputColorSpace=THREE.SRGBColorSpace;
+  else if('outputEncoding' in renderer && THREE.sRGBEncoding) renderer.outputEncoding=THREE.sRGBEncoding;
+  renderer.setPixelRatio(0.6);
+  renderer.setClearColor(0x000000,opts.transparent?0:1);
+  renderer.domElement.style.width='100%';
+  renderer.domElement.style.height='100%';
+  renderer.domElement.style.display='block';
+  container.appendChild(renderer.domElement);
+
+  const clock=new THREE.Clock();
+  function resize(){
+    const w=container.clientWidth||window.innerWidth||1;
+    const h=container.clientHeight||window.innerHeight||1;
+    renderer.setSize(w,h,false);
+    material.uniforms.uCanvas.value.set(w,h);
+  }
+  resize();
+  if('ResizeObserver' in window) new ResizeObserver(resize).observe(container);
+  else window.addEventListener('resize',resize);
+
+  const pointerTarget=new THREE.Vector2(0,0);
+  const pointerCurrent=new THREE.Vector2(0,0);
+  const pointerSmooth=8;
+  window.addEventListener('pointermove',function(e){
+    const x=(e.clientX/(window.innerWidth||1))*2-1;
+    const y=-((e.clientY/(window.innerHeight||1))*2-1);
+    pointerTarget.set(x,y);
+  });
+
+  let raf, lastT=0;
+  const FRAME_MS=1000/30;
+  const reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let firstFrame=true;
+  function loop(now){
+    raf=requestAnimationFrame(loop);
+    if(now-lastT<FRAME_MS) return;
+    lastT=now;
+    const dt=clock.getDelta();
+    const elapsed=clock.elapsedTime;
+    material.uniforms.uTime.value=elapsed;
+    const deg=(opts.rotation%360)+(reduce?0:opts.autoRotate*elapsed);
+    const rad=deg*Math.PI/180;
+    material.uniforms.uRot.value.set(Math.cos(rad),Math.sin(rad));
+    pointerCurrent.lerp(pointerTarget,Math.min(1,dt*pointerSmooth));
+    material.uniforms.uPointer.value.copy(pointerCurrent);
+    renderer.render(scene,camera);
+    if(firstFrame){
+      firstFrame=false;
+      container.dataset.ready='1';
+      // opacidad inicial según la slide activa (0.9 portadas .cover, 0.2 resto)
+      container.style.opacity = slides[currentSlideIndex].classList.contains('cover') ? '0.9' : '0.2';
+    }
+  }
+  document.addEventListener('visibilitychange',function(){
+    if(document.hidden){ if(raf){cancelAnimationFrame(raf);raf=null;} }
+    else if(!raf){ clock.getDelta(); raf=requestAnimationFrame(loop); }
+  });
+  raf=requestAnimationFrame(loop);
+}
+if('requestIdleCallback' in window){requestIdleCallback(initColorBends,{timeout:1500});}else{setTimeout(initColorBends,500);}
+</script>
+</body>
+</html>

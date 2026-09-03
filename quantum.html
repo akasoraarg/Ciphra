@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum | Ciphra</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=League+Spartan:wght@600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <!-- KaTeX para fórmulas matemáticas -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+
+    <!-- Mermaid: diagramas / mapas mentales (acento pink de Quantum) -->
+    <link rel="stylesheet" href="diagrams.css">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <script>
+      if (window.mermaid) mermaid.initialize({
+        startOnLoad: false, securityLevel: 'strict', theme: 'base', fontFamily: "'Inter', sans-serif",
+        themeVariables: {
+          background: '#0e0e12', primaryColor: '#16161c', primaryTextColor: '#f2f2f4',
+          primaryBorderColor: '#F472B6', lineColor: '#14B8A6',
+          secondaryColor: '#1a1a20', tertiaryColor: '#1a1a20', tertiaryTextColor: '#f2f2f4',
+          noteBkgColor: 'rgba(244,114,182,0.12)', noteTextColor: '#f2f2f4', fontSize: '15px'
+        }
+      });
+    </script>
+    <script src="diagrams.js"></script>
+
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Ajustes específicos para Quantum Chat */
+        #app-container { height: calc(100vh - 70px); padding: 20px; overflow: hidden; }
+        .dashboard-grid { display: grid; grid-template-columns: 1fr 320px; gap: 20px; height: 100%; }
+        
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            background: rgba(15, 15, 20, 0.4);
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .message {
+            max-width: 85%;
+            padding: 16px 20px;
+            border-radius: 20px;
+            font-size: 1.05rem;
+            line-height: 1.6;
+            animation: messageIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes messageIn {
+            from { opacity: 0; transform: translateY(10px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .user-message {
+            align-self: flex-end;
+            background: var(--ciphra-yellow);
+            color: #000;
+            font-weight: 500;
+            border-bottom-right-radius: 4px;
+        }
+
+        .ai-message {
+            align-self: flex-start;
+            background: rgba(255, 255, 255, 0.05);
+            color: #f1f5f9;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom-left-radius: 4px;
+        }
+
+        .chat-input-area {
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            gap: 12px;
+        }
+
+        #quantum-input {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 12px 16px;
+            color: #fff;
+            font-family: inherit;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.2s;
+            resize: none;
+            height: 50px;
+        }
+
+        #quantum-input:focus { border-color: var(--ciphra-yellow); box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.1); }
+
+        .send-btn {
+            background: var(--ciphra-yellow);
+            color: #000;
+            border: none;
+            border-radius: 12px;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .send-btn:hover { transform: scale(1.05); filter: brightness(1.1); }
+        .send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* KaTeX & Markdown adjustments */
+        .ai-message p { margin-bottom: 12px; }
+        .ai-message p:last-child { margin-bottom: 0; }
+        .ai-message .katex-display { margin: 15px 0; overflow-x: auto; overflow-y: hidden; }
+
+        /* Glossary Tooltips */
+        .glossary-term { color: var(--ciphra-yellow); border-bottom: 1px dashed var(--ciphra-yellow); cursor: help; position: relative; font-weight: 500; }
+        .tooltip-card { visibility: hidden; width: 240px; background: #1a1a24; color: #fff; border: 1px solid rgba(var(--accent-rgb), 0.3); border-radius: 12px; padding: 12px; position: absolute; z-index: 100; bottom: 125%; left: 50%; transform: translateX(-50%); opacity: 0; transition: all 0.3s; font-size: 0.85rem; pointer-events: none; }
+        .glossary-term:hover .tooltip-card { visibility: visible; opacity: 1; }
+
+        .dot-typing {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .dot-typing div {
+            width: 6px;
+            height: 6px;
+            background: var(--ciphra-yellow);
+            border-radius: 50%;
+            animation: dotTyping 1s infinite ease-in-out;
+        }
+        .dot-typing div:nth-child(2) { animation-delay: 0.2s; }
+        .dot-typing div:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes dotTyping {
+            0%, 100% { transform: translateY(0); opacity: 0.3; }
+            50% { transform: translateY(-4px); opacity: 1; }
+        }
+
+        /* ── Mobile ── */
+        @media (max-width: 768px) {
+            .dashboard-grid { grid-template-columns: 1fr; height: auto; }
+            input, textarea, select { font-size: 16px; }
+        }
+    </style>
+    <script src="auth.js?v=2.1"></script>
+    <script>Auth.guard();</script>
+    <style>
+    /* ── MÓDULO QUANTUM = acento PINK (paleta de la landing) ── */
+    :root {
+        --accent: #F472B6;
+        --accent-rgb: 244,114,182;
+        --border-active: #F472B6;
+    }
+    /* send-btn = gold (de la base). Focus/glows = pink. */
+    .input-group textarea:focus, .upload-area:hover, select:focus {
+        border-color: rgba(var(--accent-rgb),0.5) !important;
+        box-shadow: 0 0 18px rgba(var(--accent-rgb),0.12) !important;
+    }
+    input[type="range"] { accent-color: var(--accent) !important; }
+    .send-btn { color: #000 !important; }
+    /* ── Estética "Command Console" (igual que Commander), acento PINK ── */
+    #q-aurora { display:none !important; }   /* fondo ahora 100% CSS, como Commander */
+    body { position:relative; background:
+        radial-gradient(34vw 36vh at 10% -4%, rgba(var(--accent-rgb),0.30), transparent 58%),
+        radial-gradient(36vw 38vh at 102% 6%, rgba(251,191,36,0.14), transparent 58%),
+        radial-gradient(40vw 40vh at 82% 112%, rgba(var(--accent-rgb),0.18), transparent 58%),
+        radial-gradient(34vw 30vh at 50% 38%, rgba(var(--accent-rgb),0.07), transparent 60%),
+        repeating-linear-gradient(0deg,  rgba(var(--accent-rgb),0.05) 0 1px, transparent 1px 44px),
+        repeating-linear-gradient(90deg, rgba(var(--accent-rgb),0.05) 0 1px, transparent 1px 44px),
+        radial-gradient(130vw 130vh at 50% 42%, transparent 62%, rgba(0,0,0,0.55) 100%),
+        #08080A !important;
+        background-attachment: fixed !important; }
+    .app-header, #app-container { position:relative; z-index:2; }
+
+    /* Grain sutil (como Commander), detrás de la UI */
+    body::before { content:none !important; }   /* fuera scanlines */
+    body::after {
+        content:''; position:fixed; inset:0; pointer-events:none; z-index:1; opacity:0.06; mix-blend-mode:overlay;
+        background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+
+    /* Message enhanced entrance */
+    @keyframes msgSlide {
+        from { opacity:0; transform:translateY(16px) scale(0.97); filter:blur(3px); }
+        to   { opacity:1; transform:none; filter:none; }
+    }
+    .message { animation: msgSlide 0.38s cubic-bezier(0.22,1,0.36,1) both !important; }
+
+    /* Chat container glow border on focus */
+    .chat-container {
+        background: rgba(10,10,15,0.6) !important;
+        border: 1px solid rgba(255,255,255,0.07) !important;
+        transition: border-color 0.3s, box-shadow 0.3s !important;
+    }
+    .chat-container:focus-within {
+        border-color: rgba(var(--accent-rgb),0.2) !important;
+        box-shadow: 0 0 40px rgba(var(--accent-rgb),0.05) !important;
+    }
+
+    /* Quantum input focus shimmer */
+    #quantum-input { position:relative; transition: all 0.25s !important; }
+    #quantum-input:focus {
+        border-color: rgba(var(--accent-rgb),0.4) !important;
+        box-shadow: 0 0 0 3px rgba(var(--accent-rgb),0.07), 0 0 20px rgba(var(--accent-rgb),0.1) !important;
+    }
+
+    /* Settings panel entrance */
+    @keyframes spanel-in {
+        from { opacity:0; transform:translateX(20px); }
+        to   { opacity:1; transform:none; }
+    }
+    .settings-panel {
+        animation: spanel-in 0.55s 0.2s cubic-bezier(0.22,1,0.36,1) both;
+        background: rgba(12,12,18,0.7) !important;
+        backdrop-filter: blur(24px) !important;
+        border: 1px solid rgba(255,255,255,0.07) !important;
+    }
+
+    /* Send button pulse while disabled */
+    #btn-send:not(:disabled) { animation: send-ready 2s ease-in-out infinite; }
+    @keyframes send-ready {
+        0%,100%{box-shadow:0 4px 15px rgba(var(--accent-rgb),0.2)}
+        50%{box-shadow:0 4px 25px rgba(var(--accent-rgb),0.45)}
+    }
+
+    /* Typing dots upgrade */
+    .dot-typing div {
+        background: var(--accent) !important;
+    }
+
+    /* Segmented control shine */
+    .segmented-control label:hover { background: rgba(var(--accent-rgb),0.08) !important; }
+
+    /* App header entrance */
+    .app-header { animation: spanel-in 0.5s ease both; }
+    </style>
+</head>
+<body>
+<canvas id="q-aurora"></canvas>
+<script>
+(function(){
+    const c=document.getElementById('q-aurora');
+    if(!c)return;
+    const ctx=c.getContext('2d');
+    let W,H,blobs,raf;
+    function resize(){W=c.width=innerWidth;H=c.height=innerHeight;}
+    function init(){
+        blobs=[
+            {x:W*.7,y:H*.25,r:W*.38,dr:244,dg:114,db:182,a:0.05,t:0},
+            {x:W*.2,y:H*.65,r:W*.32,dr:249,dg:168,db:212,a:0.035,t:3},
+            {x:W*.85,y:H*.7,r:W*.28,dr:251,dg:191,db:36,a:0.03,t:1.5},
+        ];
+    }
+    function draw(){
+        ctx.clearRect(0,0,W,H);
+        blobs.forEach(b=>{
+            b.t+=0.004; b.x+=Math.sin(b.t*.9)*.5; b.y+=Math.cos(b.t*.7)*.4;
+            b.x=((b.x%W)+W)%W; b.y=((b.y%H)+H)%H;
+            const g=ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
+            g.addColorStop(0,`rgba(${b.dr},${b.dg},${b.db},${b.a})`);
+            g.addColorStop(1,'rgba(0,0,0,0)');
+            ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);
+            ctx.fillStyle=g;ctx.fill();
+        });
+        raf=requestAnimationFrame(draw);
+    }
+    resize();init();draw();
+    window.addEventListener('resize',()=>{cancelAnimationFrame(raf);resize();init();draw();});
+})();
+</script>
+    <header class="app-header">
+        <div class="header-left">
+            <a href="index.html" class="logo">
+                <span class="logo-text">CIP<span class="logo-accent">H</span>RA</span>
+            </a>
+            <div class="app-name">Quantum <span style="font-size: 0.6rem; opacity: 0.5; margin-left: 8px;">SOCRATIC 1.0</span></div>
+        </div>
+        <a href="index.html" style="font-size:0.85rem; color: var(--text-muted); text-decoration:none; display: flex; align-items: center; gap: 8px;">
+            <i data-lucide="home" style="width: 14px;"></i> Volver al Inicio
+        </a>
+    </header>
+
+    <main id="app-container">
+        <div class="dashboard-grid">
+            
+            <!-- Chat Interface -->
+            <div class="chat-container">
+                <div class="chat-messages" id="chat-messages">
+                    <div class="message ai-message">
+                        <strong>Quantum AI:</strong> Hola. Estoy listo para ayudarte a desglosar cualquier problema técnico. 
+                        No te daré la respuesta de inmediato, sino que te guiaré para que la descubras tú mismo. 
+                        ¿Con qué quieres empezar hoy?
+                    </div>
+                </div>
+                <div class="chat-input-area">
+                    <textarea id="quantum-input" placeholder="Plantea tu problema aquí..." onkeydown="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendMessage(); }"></textarea>
+                    <button id="btn-send" class="send-btn" onclick="sendMessage()">
+                        <i data-lucide="send"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Settings Sidebar -->
+            <aside class="settings-panel glass-panel">
+                <h3>Contexto de Aprendizaje</h3>
+                
+                <div class="setting-group">
+                    <label>Rigor Académico</label>
+                    <div class="segmented-control">
+                        <input type="radio" name="depth" id="depth-basic" value="basic">
+                        <label for="depth-basic">Básico</label>
+                        
+                        <input type="radio" name="depth" id="depth-eng" value="engineering" checked>
+                        <label for="depth-eng">Ingeniería</label>
+                        
+                        <input type="radio" name="depth" id="depth-res" value="research">
+                        <label for="depth-res">Investigación</label>
+                    </div>
+                </div>
+
+                <div class="setting-group toggle-group">
+                    <div class="toggle-info">
+                        <label>Notación LaTeX</label>
+                        <span>Renderizado matemático HD.</span>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="show-formulas" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div style="margin-top: auto; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.05);">
+                    <div style="font-size: 0.7rem; color: var(--text-muted); line-height: 1.4;">
+                        <i data-lucide="info" style="width: 12px; vertical-align: middle; margin-right: 4px;"></i>
+                        Quantum utiliza el método socrático para mejorar la retención cognitiva y la comprensión profunda de sistemas complejos.
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </main>
+
+    <script>
+        lucide.createIcons();
+        
+        let chatHistory = [];
+
+        async function sendMessage() {
+            const input = document.getElementById('quantum-input');
+            const chatMessages = document.getElementById('chat-messages');
+            const btnSend = document.getElementById('btn-send');
+            const text = input.value.trim();
+
+            if (!text) return;
+
+            // Add user message to UI
+            addMessage(text, 'user');
+            input.value = '';
+            input.style.height = '50px';
+            
+            btnSend.disabled = true;
+
+            // Add loading message
+            const loadingId = 'loading-' + Date.now();
+            const loadingDiv = document.createElement('div');
+            loadingDiv.id = loadingId;
+            loadingDiv.className = 'message ai-message';
+            loadingDiv.innerHTML = '<span class="dot-typing"><div></div><div></div><div></div></span> Analizando matriz...';
+            chatMessages.appendChild(loadingDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            try {
+                const response = await fetch('/api/quantum/solve', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': Auth._getStorageItem('ciphra_token')
+                    },
+                    body: JSON.stringify({ 
+                        problem: text,
+                        history: chatHistory,
+                        depth: document.querySelector('input[name="depth"]:checked').value
+                    })
+                });
+
+                const data = await response.json();
+                
+                // Remove loading
+                loadingDiv.remove();
+
+                // Add AI response
+                addMessage(data.solution, 'ai');
+                
+                // Update history
+                chatHistory.push({ role: 'user', content: text });
+                chatHistory.push({ role: 'ai', content: data.solution });
+                if (chatHistory.length > 10) chatHistory = chatHistory.slice(-10);
+
+            } catch (err) {
+                loadingDiv.innerHTML = '⚠️ Error en el núcleo Quantum. Intenta de nuevo.';
+            } finally {
+                btnSend.disabled = false;
+            }
+        }
+
+        function addMessage(content, role) {
+            const chatMessages = document.getElementById('chat-messages');
+            const div = document.createElement('div');
+            div.className = `message ${role}-message`;
+            
+            if (role === 'ai') {
+                // Parse markdown
+                let html = marked.parse(content);
+                // Parse Glossary
+                html = html.replace(/\[\[(.*?)\|(.*?)\]\]/g, (match, term, def) => {
+                    return `<span class="glossary-term">${term}<span class="tooltip-card">${def}</span></span>`;
+                });
+                div.innerHTML = html;
+            } else {
+                div.textContent = content;
+            }
+            
+            chatMessages.appendChild(div);
+            
+            // Render KaTeX if AI
+            if (role === 'ai' && window.renderMathInElement) {
+                renderMathInElement(div, {
+                    delimiters: [
+                        {left: '$$', right: '$$', display: true},
+                        {left: '$', right: '$', display: false}
+                    ]
+                });
+            }
+            // Diagramas / mapas mentales (bloques ```mermaid)
+            if (role === 'ai' && window.renderDiagrams) window.renderDiagrams(div);
+
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ciphra Commander</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=League+Spartan:wght@700;800;900&display=swap"
+        rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="commander.css?v=12">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <!-- Mermaid: mapas mentales / diagramas en el chat -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <script>
+        if (window.mermaid) mermaid.initialize({
+            startOnLoad: false,
+            securityLevel: 'strict',
+            theme: 'base',
+            fontFamily: "'Inter', sans-serif",
+            themeVariables: {
+                background: '#0e0e12',
+                primaryColor: '#16161c',
+                primaryTextColor: '#f2f2f4',
+                primaryBorderColor: '#FBBF24',
+                lineColor: '#14B8A6',
+                secondaryColor: '#1a1a20',
+                tertiaryColor: '#1a1a20',
+                tertiaryTextColor: '#f2f2f4',
+                noteBkgColor: 'rgba(251,191,36,0.12)',
+                noteTextColor: '#f2f2f4',
+                fontSize: '15px'
+            }
+        });
+    </script>
+    <script src="diagrams.js"></script>
+    <script src="i18n.js"></script>
+</head>
+
+<body>
+
+    <!-- ═══════ SIDEBAR ═══════ -->
+    <aside class="sidebar" id="sidebar">
+        <div class="logo-section">
+            <a href="index.html" style="text-decoration:none; display:flex; align-items:center; gap:10px;">
+                <svg class="brand-compass" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path class="compass-inter" d="M76 24 L59 50 L76 76 L50 59 L24 76 L41 50 L24 24 L50 41 Z" />
+                    <path class="compass-card" d="M50 4 L57 43 L96 50 L57 57 L50 96 L43 57 L4 50 L43 43 Z" />
+                    <circle class="compass-hub" cx="50" cy="50" r="3.5" />
+                </svg>
+                <span class="logo-text">CIP<span class="logo-accent">H</span>RA</span>
+            </a>
+        </div>
+
+        <button class="new-chat-btn" onclick="createChat()">
+            <i data-lucide="plus"></i> <span data-i18n="cui.newchat">Nuevo chat</span>
+        </button>
+
+        <div class="chat-list" id="chatList"></div>
+
+        <div class="sidebar-footer">
+            <div class="sidebar-links">
+                <a href="quantum.html" class="sidebar-link">
+                    <i data-lucide="atom"></i> <span data-i18n="cui.toquantum">Ir a Quantum</span>
+                </a>
+                <a href="index.html" class="sidebar-link">
+                    <i data-lucide="home"></i> <span data-i18n="cui.home">Inicio</span>
+                </a>
+            </div>
+
+            <div class="usage-counter" id="usage-counter">
+                <div class="usage-bar">
+                    <div class="usage-bar-fill" id="usage-bar-fill" style="width:0%"></div>
+                </div>
+                <span id="usage-text">-- / 75</span>
+            </div>
+
+            <div class="user-pill-wrap" id="user-pill-wrap">
+                <div class="user-pill" id="user-pill-btn">
+                    <span class="pill-dot"></span>
+                    <span id="operator-name">---</span>
+                    <i data-lucide="chevron-up" class="pill-chevron"></i>
+                </div>
+                <div class="pill-dropdown">
+                    <div class="dp-profile">
+                        <div id="dp-avatar-box"></div>
+                        <div class="dp-user-info">
+                            <div style="display:flex;align-items:center;gap:5px;">
+                                <span class="dp-user-name" id="dp-user-name">OPERADOR</span>
+                                <span id="pro-badge"
+                                    style="display:none;font-size:9px;padding:2px 5px;background:var(--gold);color:#000;border-radius:3px;font-weight:800;">PRO</span>
+                            </div>
+                            <span class="dp-user-email" id="dp-user-email">---</span>
+                        </div>
+                    </div>
+                    <div class="dp-links">
+                        <a href="checkout.html" class="dp-item" id="upgrade-link"
+                            style="display:none;color:var(--gold);font-weight:700;">
+                            <i data-lucide="zap"></i> <span data-i18n="cui.upgrade">Ascender a PRO</span>
+                        </a>
+                        <a href="index.html" class="dp-item"><i data-lucide="home"></i> <span
+                                data-i18n="cui.home">Inicio</span></a>
+                        <a href="sandbox.html" class="dp-item" style="color:var(--gold);font-weight:600;">
+                            <i data-lucide="flask-conical"></i> <span data-i18n="cui.sandbox">Canal de Pruebas</span>
+                        </a>
+                        <div class="dp-item"
+                            style="display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:default">
+                            <span style="display:flex;align-items:center;gap:8px"><i data-lucide="languages"></i> <span
+                                    data-i18n="nav.language">Idioma</span></span>
+                            <span data-lang-switcher></span>
+                        </div>
+                        <a href="#" class="dp-item" onclick="alert('Próximamente');return false;">
+                            <i data-lucide="settings"></i> <span data-i18n="cui.settings">Configuración</span>
+                        </a>
+                        <a href="#" class="dp-item" onclick="redeemCode();return false;">
+                            <i data-lucide="ticket"></i> <span data-i18n="cui.redeem">Canjear Código</span>
+                        </a>
+                        <div class="dp-sep"></div>
+                        <button class="dp-item danger" id="logout-btn">
+                            <i data-lucide="log-out"></i> <span data-i18n="cui.logout">Cerrar Sesión</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Overlay para cerrar el drawer en mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar(false)"></div>
+
+    <!-- ═══════ MAIN ═══════ -->
+    <main class="main-chat" style="position:relative;">
+
+        <div class="workspace">
+            <div class="chat-column">
+                <div class="header-bar">
+                    <button class="menu-toggle" id="menuToggle" onclick="toggleSidebar()" aria-label="Abrir menú">
+                        <i data-lucide="menu"></i>
+                    </button>
+                    <!-- Hidden title for JS compat -->
+                    <span id="activeChatTitle" style="display:none;">Selecciona un chat</span>
+                </div>
+
+                <!-- Chat container -->
+                <div class="chat-container" id="chatContainer" style="position:relative;"></div>
+
+                <!-- Input area (switcher + box move together) -->
+                <div class="input-area">
+                    <div class="input-stack">
+                        <div class="empty-glow"></div>
+                        
+                        <div class="empty-state-logo">
+                            <div class="cmdr-logo">
+                                <svg class="cmdr-mark" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Commander">
+                                    <circle class="cmdr-ring" cx="60" cy="60" r="54"/>
+                                    <circle class="cmdr-ring-2" cx="60" cy="60" r="44"/>
+                                    <path class="cmdr-inter" d="M94 26 L70 50 L94 94 L70 70 L26 94 L50 70 L26 26 L50 50 Z"/>
+                                    <path class="cmdr-card" d="M60 6 L68 52 L114 60 L68 68 L60 114 L52 68 L6 60 L52 52 Z"/>
+                                    <circle class="cmdr-hub" cx="60" cy="60" r="6"/>
+                                    <circle class="cmdr-hub-core" cx="60" cy="60" r="2.4"/>
+                                </svg>
+                            </div>
+                            <div class="empty-title">COMMANDER</div>
+                            <p class="empty-sub">¿En qué estás trabajando hoy?</p>
+                        </div>
+
+                        <div class="input-box" id="main-input-box">
+                            <input type="file" id="img-input" accept="image/*" style="display:none;" onchange="handleImageAttach(event)">
+                            <div id="thumb-strip" style="display:none;"></div>
+                            
+                            <div class="input-inner">
+                                <div class="input-controls">
+                                    <button class="attach-btn" onclick="document.getElementById('img-input').click()" title="Adjuntar imagen">
+                                        <i data-lucide="paperclip"></i>
+                                    </button>
+                                    <textarea id="userInput" placeholder="Escribe un mensaje..." onkeydown="handleKey(event)" rows="1" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,180)+'px'"></textarea>
+                                </div>
+                            </div>
+                            
+                            <div class="composer-footer">
+                                <div class="motor-switcher" id="motor-switcher"></div>
+                                <div style="display:flex; align-items:center;">
+                                    <span class="shortcut-hint">⌘ Enter</span>
+                                    <button class="send-btn" onclick="sendMessage()">
+                                        <i data-lucide="send"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="neural-hints">
+                            <button class="neural-hint-chip" onclick="insertHint('Analizar código actual')">Analizar código</button>
+                            <button class="neural-hint-chip" onclick="insertHint('Redactar documento técnico')">Redactar documento</button>
+                            <button class="neural-hint-chip" onclick="insertHint('Búsqueda profunda en internet')">Búsqueda profunda</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel para artefactos y código -->
+            <aside class="artifact-panel" id="artifactPanel">
+            </aside>
+        </div>
+
+    </main>
+
+    <!-- ════════════════════════════════════
+     HINT CHIPS
+════════════════════════════════════ -->
+    <script>
+        // ── Drawer del sidebar en mobile ──
+        window.toggleSidebar = function (force) {
+            const sb = document.getElementById('sidebar');
+            const ov = document.getElementById('sidebarOverlay');
+            if (!sb || !ov) return;
+            const open = (force === undefined) ? !sb.classList.contains('open') : force;
+            sb.classList.toggle('open', open);
+            ov.classList.toggle('show', open);
+        };
+        // Cerrar el drawer al elegir algo dentro del sidebar (en mobile)
+        document.addEventListener('DOMContentLoaded', function () {
+            const sb = document.getElementById('sidebar');
+            if (!sb) return;
+            sb.addEventListener('click', function (e) {
+                if (window.innerWidth <= 768 && e.target.closest('.chat-item, .sidebar-link, .new-chat-btn')) {
+                    window.toggleSidebar(false);
+                }
+            });
+        });
+
+        window.insertHint = function (text) {
+            const inp = document.getElementById('userInput');
+            if (!inp) return;
+            inp.value = text;
+            inp.focus();
+            inp.style.height = 'auto';
+            inp.style.height = Math.min(inp.scrollHeight, 180) + 'px';
+        };
+    </script>
+
+    <!-- ════════════════════════════════════
+     MOTOR SELECTOR
+════════════════════════════════════ -->
+    <script>
+        let selectedMotor = 'synapse';
+
+        const MOTORS = {
+            synapse: { label: 'SYNAPSE CORE', desc: 'Ultraveloz — baja latencia', badge: 'FREE', badgeClass: 'free', dot: '#34d399', rgb: '52,211,153', req: null },
+            apex: { label: 'APEX PIPELINE', desc: 'Código y arquitecturas complejas', badge: 'PRO', badgeClass: 'pro', dot: '#FBBF24', rgb: '251,191,36', req: 'pro' },
+            ethos: { label: 'ETHOS KERNEL', desc: 'Razonamiento profundo y matemáticas', badge: 'PRO', badgeClass: 'pro', dot: '#a78bfa', rgb: '167,139,250', req: 'pro' },
+            aether: { label: 'AETHER SHARD', desc: 'Kernel experimental reservado', badge: 'RESTRICTED', badgeClass: 'aether', dot: '#cbd5e1', rgb: '203,213,225', req: 'aether' }
+        };
+
+        function isMotorLocked(key) {
+            const m = MOTORS[key]; const plan = window._userPlan || 'free';
+            return m.req && plan !== m.req && !(m.req === 'pro' && plan === 'aether');
+        }
+
+        // Construye el selector como PILL (motor actual) + MENÚ desplegable.
+        function initMotorSelector() {
+            const switcher = document.getElementById('motor-switcher');
+            if (!switcher) return;
+            const cur = MOTORS[selectedMotor];
+
+            // Set the motor color for the UI
+            document.documentElement.style.setProperty('--motor-color', cur.dot);
+
+            const opts = Object.entries(MOTORS).map(([key, m]) => {
+                const locked = isMotorLocked(key);
+                const active = key === selectedMotor;
+                return `<button type="button" class="engine-opt ${active ? 'eo-active' : ''} ${locked ? 'eo-locked' : ''}"
+                style="--mcc:${m.dot};--mcc-rgb:${m.rgb};" onclick="selectMotor('${key}')">
+            <span class="eo-dot"></span>
+            <span class="eo-body">
+                <span class="eo-top">
+                    <span class="eo-name">${m.label}</span>
+                    <span class="eo-badge ${m.badgeClass}">${m.badge}</span>
+                </span>
+                <span class="eo-desc">${m.desc}</span>
+            </span>
+            ${locked
+                        ? `<i data-lucide="lock" class="eo-lock"></i>`
+                        : `<i data-lucide="check" class="eo-check"></i>`}
+        </button>`;
+            }).join('');
+
+            switcher.innerHTML = `
+        <button type="button" class="engine-pill" id="engine-pill"
+                style="--mcc:${cur.dot};--mcc-rgb:${cur.rgb};"
+                aria-haspopup="listbox" aria-expanded="false" onclick="toggleEngineMenu(event)">
+            <span class="ep-dot"></span>
+            <span class="ep-name" id="ep-name">${cur.label}</span>
+            <span class="ep-badge ${cur.badgeClass}" id="ep-badge">${cur.badge}</span>
+            <i data-lucide="chevron-down" class="ep-chevron"></i>
+        </button>
+        <div class="engine-menu" id="engine-menu" role="listbox">${opts}</div>
+    `;
+            lucide.createIcons();
+        }
+
+        function toggleEngineMenu(e) {
+            if (e) e.stopPropagation();
+            const sw = document.getElementById('motor-switcher');
+            const open = sw.classList.toggle('open');
+            const pill = document.getElementById('engine-pill');
+            if (pill) pill.setAttribute('aria-expanded', open ? 'true' : 'false');
+        }
+        function closeEngineMenu() {
+            const sw = document.getElementById('motor-switcher');
+            if (sw) sw.classList.remove('open');
+            const pill = document.getElementById('engine-pill');
+            if (pill) pill.setAttribute('aria-expanded', 'false');
+        }
+        // Cerrar el menú al click afuera
+        document.addEventListener('click', (e) => {
+            const sw = document.getElementById('motor-switcher');
+            if (sw && sw.classList.contains('open') && !sw.contains(e.target)) closeEngineMenu();
+        });
+
+        function selectMotor(key) {
+            const m = MOTORS[key];
+            if (!m) return;
+            if (isMotorLocked(key)) { closeEngineMenu(); showMotorHint(key); return; }
+
+            selectedMotor = key;
+            window.selectedMotor = key;
+            closeEngineMenu();
+            initMotorSelector();   // re-render: actualiza pill + activo en el menú
+        }
+
+        function showMotorHint(key) {
+            const m = MOTORS[key];
+            const existing = document.getElementById('motor-hint');
+            if (existing) existing.remove();
+            const hint = document.createElement('div');
+            hint.id = 'motor-hint';
+            hint.style.cssText = `position:fixed;bottom:120px;left:50%;transform:translateX(-50%);
+        background:#1c1c1e;border:1px solid rgba(255,255,255,0.12);border-radius:10px;
+        padding:12px 16px;z-index:999;font-size:12px;color:#888;text-align:center;
+        box-shadow:0 8px 24px rgba(0,0,0,0.5);max-width:280px;`;
+            if (key === 'aether') {
+                hint.innerHTML = `<div style="font-family:'League Spartan',sans-serif;font-weight:700;font-size:13px;color:#c8c8dc;margin-bottom:4px;">AETHER — Acceso Restringido</div>
+            <div style="margin-bottom:8px;">Requiere código de invitación especial.</div>
+            <a href="#" onclick="requestAetherCode();return false;" style="color:#c8c8dc;font-weight:700;font-size:11px;text-decoration:none;">Ingresar código →</a>`;
+            } else {
+                hint.innerHTML = `<div style="font-family:'League Spartan',sans-serif;font-weight:700;font-size:13px;color:#f0f0f0;margin-bottom:4px;">${m.label} requiere PRO</div>
+            <div style="margin-bottom:8px;">${m.desc}</div>
+            <a href="checkout.html" style="color:#f0b429;font-weight:700;font-size:11px;text-decoration:none;">Ascender a PRO →</a>`;
+            }
+            document.body.appendChild(hint);
+            setTimeout(() => hint.remove(), 4000);
+        }
+
+        async function requestAetherCode() {
+            document.getElementById('motor-hint')?.remove();
+            const code = prompt("Ingresá tu código de acceso AETHER:");
+            if (!code) return;
+            const res = await Auth.redeem(code.trim());
+            if (res.success) { alert(res.message); location.reload(); }
+            else alert("Código inválido.");
+        }
+
+        window.getSelectedMotor = () => selectedMotor;
+    </script>
+
+    <!-- ════════════════════════════════════
+     AUTH BYPASS + INIT (MODO DESARROLLO)
+════════════════════════════════════ -->
+    <script src="auth.js"></script>
+    <script src="commander.js"></script>
+    <script>
+        lucide.createIcons();
+
+        // Usuario simulado para desarrollo / modo offline
+        const u = (typeof Auth !== 'undefined' && Auth.getUser) ? Auth.getUser() : {
+            username: 'OPERADOR_DEMO',
+            email: 'operador@ciphra.io',
+            plan: 'pro'
+        };
+
+        // Carga directa de la interfaz de usuario
+        try {
+            const name = u.username.toUpperCase();
+            document.getElementById('operator-name').innerText = name;
+            document.getElementById('dp-user-name').innerText = name;
+            document.getElementById('dp-user-email').innerText = u.email;
+
+            const initial = name.charAt(0);
+            const bgColor = '#8b5cf6';
+            const avatarHTML = `<div class="pill-avatar default-avatar" style="background:${bgColor};width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700;">${initial}</div>`;
+            const avatarInner = `<div class="dp-avatar-big default-avatar" style="background:${bgColor};font-size:1.8rem;width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;">${initial}</div>`;
+
+            const avatarBigHTML = `<div class="dp-avatar-wrap">${avatarInner}</div>`;
+            const pillDot = document.querySelector('.pill-dot');
+            if (pillDot) pillDot.outerHTML = avatarHTML;
+            document.getElementById('dp-avatar-box').innerHTML = avatarBigHTML;
+        } catch (e) {
+            console.error('Error al inicializar sesión ficticia:', e);
+        }
+
+        // Control del menú desplegable del usuario
+        document.getElementById('user-pill-btn')?.addEventListener('click', e => {
+            e.stopPropagation();
+            document.getElementById('user-pill-wrap')?.classList.toggle('open');
+        });
+        document.addEventListener('click', () => {
+            document.getElementById('user-pill-wrap')?.classList.remove('open');
+        });
+
+        // Configuración del Plan
+        document.getElementById('pro-badge').style.display = 'inline-block';
+        window._isPro = true;
+        window._userPlan = 'pro';
+
+        // Inicializar el selector de motores
+        initMotorSelector();
+        lucide.createIcons();
+
+        // Simulación del contador de uso (Sin bloqueo)
+        const fill = document.getElementById('usage-bar-fill');
+        const text = document.getElementById('usage-text');
+        const counter = document.getElementById('usage-counter');
+        if (counter && fill && text) {
+            fill.style.width = '100%';
+            text.innerText = 'PRO (ILIMITADO)';
+            counter.classList.add('pro');
+            fill.classList.add('pro');
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrate | Ciphra</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=League+Spartan:wght@800&family=JetBrains+Mono:wght@400;700&family=Space+Mono&family=Syne:wght@800&family=Cedarville+Cursive&family=Playfair+Display:ital,wght@1,900&display=swap"
+        rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="ciphra.css">
+    <style>
+        body {
+            background: #000;
+            color: white;
+            margin: 0;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Inter', sans-serif;
+            transition: background 1.5s ease;
+        }
+
+        #master-container {
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+            z-index: 100;
+            position: relative;
+            transition: all 1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .phase {
+            display: none;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 1s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        .phase.active {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .hello-wrapper {
+            height: 12rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 2rem;
+        }
+
+        .big-hello {
+            font-family: 'League Spartan', sans-serif;
+            font-size: clamp(3.5rem, 14vw, 7.5rem);
+            letter-spacing: 0.15em;
+            padding-left: 0.15em;
+            margin: 0;
+            color: white;
+            text-shadow: 0 0 30px rgba(255, 255, 255, 0.1);
+            transition: all 0.08s ease;
+            will-change: font-family, filter, transform, opacity;
+        }
+
+        .big-hello.glitching {
+            filter: blur(4px);
+            opacity: 0.5;
+            transform: scale(1.03);
+        }
+
+        /* --- SISTEMA DE RESPLANDOR (ESPECTRO) --- */
+        .glow-system {
+            position: fixed;
+            bottom: -250px;
+            left: 0;
+            width: 100%;
+            height: 85vh;
+            z-index: 5;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 3s ease-in-out, bottom 4s cubic-bezier(0.4, 0, 0.2, 1), transform 2s ease;
+        }
+
+        .glow-system.active {
+            opacity: 1;
+            bottom: -150px;
+        }
+
+        /* Estado para la transición final: IMITA AL COMMANDER */
+        .bg-overlay.commander-transition {
+            background:
+                radial-gradient(circle at 50% -20%, rgba(255, 204, 0, 0.2), transparent 70%),
+                radial-gradient(circle at 10% 20%, rgba(255, 204, 0, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(245, 158, 11, 0.15) 0%, transparent 40%),
+                #050507 !important;
+            transition: background 2s ease-in-out !important;
+        }
+
+        .glow-system.fade-out {
+            opacity: 0 !important;
+            transition: opacity 1.5s ease-out;
+        }
+
+        .glow-orb {
+            position: absolute;
+            bottom: 0;
+            border-radius: 50%;
+            filter: blur(120px);
+            mix-blend-mode: screen;
+            transition: all 2s ease;
+        }
+
+        .orb-violet {
+            background: radial-gradient(circle, #8b5cf6 0%, transparent 75%);
+            width: 85vw;
+            height: 500px;
+            left: -15vw;
+            bottom: -50px;
+            opacity: 0.75;
+            animation: drift 15s infinite alternate ease-in-out;
+        }
+
+        .orb-red {
+            background: radial-gradient(circle, #ef4444 0%, transparent 75%);
+            width: 85vw;
+            height: 500px;
+            right: -15vw;
+            bottom: -50px;
+            opacity: 0.75;
+            animation: drift 12s infinite alternate-reverse ease-in-out;
+        }
+
+        .orb-yellow-main {
+            background: radial-gradient(circle, #FFD700 0%, transparent 75%);
+            width: 100vw;
+            height: 550px;
+            left: 0;
+            bottom: -120px;
+            opacity: 0.8;
+            animation: pulse-glow 10s infinite alternate ease-in-out;
+        }
+
+        @keyframes drift {
+            from {
+                transform: translateX(0);
+            }
+
+            to {
+                transform: translateX(10vw);
+            }
+        }
+
+        @keyframes pulse-glow {
+            from {
+                opacity: 0.6;
+            }
+
+            to {
+                opacity: 0.9;
+            }
+        }
+
+        /* --- UI --- */
+        .btn-next {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: white;
+            padding: 1.2rem 3.5rem;
+            border-radius: 100px;
+            font-family: 'JetBrains Mono', monospace;
+            text-transform: uppercase;
+            letter-spacing: 0.25em;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.4s;
+            backdrop-filter: blur(15px);
+        }
+
+        .btn-next:hover {
+            background: white;
+            color: black;
+            box-shadow: 0 0 60px rgba(255, 255, 255, 0.3);
+            transform: translateY(-4px);
+        }
+
+        .cmd-input {
+            background: none;
+            border: none;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+            width: 100%;
+            padding: 1.5rem 0;
+            font-size: 2rem;
+            color: #ffcc00;
+            font-family: 'JetBrains Mono', monospace;
+            text-align: center;
+            outline: none;
+            margin-bottom: 1.5rem;
+        }
+
+        .step-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.4);
+            margin-bottom: 2.5rem;
+            display: block;
+            letter-spacing: 0.4em;
+        }
+
+        #particle-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .bg-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            z-index: 1;
+        }
+
+        .avatar-box {
+            width: 140px;
+            height: 140px;
+            border: 2px dashed rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            margin: 0 auto 2.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.4s;
+        }
+
+        .avatar-box:hover {
+            border-color: white;
+            transform: scale(1.1);
+        }
+
+        .avatar-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+
+        .spin {
+            animation: spin-anim 2s infinite linear;
+            display: inline-block;
+        }
+
+        @keyframes spin-anim {
+            from {
+                transform: rotate(0);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes pill-pulse {
+            0%, 100% { opacity: 1; box-shadow: 0 0 8px #ffcc00; }
+            50% { opacity: 0.4; box-shadow: 0 0 3px #ffcc00; }
+        }
+
+        /* --- SISTEMA DE EXPLOSIÓN AMARILLA --- */
+        .sink-down {
+            transform: translateY(100vh) !important;
+            opacity: 0 !important;
+            transition: all 2.5s cubic-bezier(0.25, 0.1, 0.25, 1) !important;
+        }
+
+        .glow-system-pro {
+            position: fixed;
+            bottom: -250px;
+            left: 0;
+            width: 100%;
+            height: 85vh;
+            z-index: 5;
+            pointer-events: none;
+            opacity: 0;
+            transform: translateY(100vh);
+            transition: opacity 0.5s, transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .glow-system-pro.erupt {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Orbes amarillos pesados */
+        .orb-yellow-heavy { 
+            width: 70vw; height: 70vw; background: var(--ciphra-yellow); 
+            top: 20%; left: -10%; animation-duration: 12s; opacity: 0.6; filter: blur(100px);
+        }
+        .orb-yellow-heavy-2 { 
+            width: 60vw; height: 60vw; background: #ffea8c; 
+            bottom: 0; right: -20%; animation-duration: 15s; opacity: 0.5; filter: blur(140px);
+        }
+
+        .plans-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 2rem;
+        }
+        .plan-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1.5rem;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: left;
+            position: relative;
+        }
+        .plan-card:hover {
+            border-color: rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.06);
+            transform: translateY(-5px);
+        }
+        .plan-card.selected {
+            border-color: var(--ciphra-yellow);
+            background: rgba(255, 204, 0, 0.05);
+            box-shadow: 0 0 30px rgba(255, 204, 0, 0.1);
+        }
+        .plan-card.selected::after {
+            content: '✓';
+            position: absolute; top: 10px; right: 15px;
+            color: var(--ciphra-yellow); font-weight: bold;
+        }
+        .plan-card h4 {
+            font-family: 'Syne', sans-serif; margin: 0 0 0.5rem; font-size: 1.1rem;
+        }
+        .plan-card p {
+            font-size: 0.75rem; color: rgba(255,255,255,0.5); margin: 0; line-height: 1.4;
+        }
+        .plan-icon {
+            margin-bottom: 1rem; color: rgba(255,255,255,0.4);
+        }
+        .plan-card.selected .plan-icon { color: var(--ciphra-yellow); }
+
+        /* ── Mobile ── */
+        @media (max-width: 600px) {
+            .plans-grid { grid-template-columns: 1fr; }
+            input, textarea, select { font-size: 16px; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="bg-overlay"></div>
+    <div class="glow-system" id="glow-system">
+        <div class="glow-orb orb-violet"></div>
+        <div class="glow-orb orb-red"></div>
+        <div class="glow-orb orb-yellow-main"></div>
+    </div>
+    
+    <div class="glow-system-pro" id="glow-system-pro">
+        <div class="glow-orb orb-yellow-heavy"></div>
+        <div class="glow-orb orb-yellow-heavy-2"></div>
+    </div>
+
+    <canvas id="particle-canvas"></canvas>
+
+    <div id="master-container">
+        <div id="phase-0" class="phase">
+            <div style="margin-bottom: 2.5rem;">
+                <span id="status-pill" style="
+                    display: inline-flex; align-items: center; gap: 8px;
+                    font-family: 'JetBrains Mono', monospace;
+                    font-size: 0.65rem; letter-spacing: 0.25em; text-transform: uppercase;
+                    color: rgba(255,255,255,0.5);
+                    border: 1px solid rgba(255,255,255,0.1);
+                    padding: 6px 16px; border-radius: 100px;
+                    backdrop-filter: blur(10px);
+                    background: rgba(255,255,255,0.03);
+                ">
+                    <span
+                        style="width:6px; height:6px; border-radius:50%; background:#ffcc00; box-shadow: 0 0 8px #ffcc00; display:inline-block; animation: pill-pulse 2s infinite ease-in-out;"></span>
+                    REGISTER | WELCOME TO CIPHRA!
+                </span>
+            </div>
+            <div class="hello-wrapper">
+                <h1 class="big-hello" id="glitch-text">HOLA.</h1>
+            </div>
+            <button class="btn-next" onclick="goToPhase(1)">Inicializar</button>
+        </div>
+
+        <div id="phase-1" class="phase">
+            <span class="step-label">[ SECCIÓN 01 / MAIL ]</span>
+            <input type="email" id="reg-email" class="cmd-input" placeholder="TU@EMAIL.COM" autocomplete="off"
+                spellcheck="false">
+            <button class="btn-next" onclick="goToPhase(2)">Siguiente</button>
+        </div>
+
+        <div id="phase-2" class="phase">
+            <span class="step-label">[ SECCIÓN 02 / CONTRASEÑA ]</span>
+            <input type="password" id="reg-pass" class="cmd-input" placeholder="••••••••" autocomplete="off">
+            <button class="btn-next" onclick="goToPhase(3)">Siguiente</button>
+        </div>
+
+        <div id="phase-3" class="phase">
+            <span class="step-label">[ SECCIÓN 03 / USERNAME ]</span>
+            <input type="text" id="reg-user" class="cmd-input" placeholder="OPERADOR_01" autocomplete="off"
+                spellcheck="false">
+            <button class="btn-next" onclick="goToPhase(4)">Siguiente</button>
+        </div>
+
+        <div id="phase-4" class="phase">
+            <span class="step-label">[ SECCIÓN 04 / APODO ]</span>
+            <div class="commander-bubble" style="
+                background: rgba(255, 255, 255, 0.03);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 20px;
+                padding: 1.5rem;
+                max-width: 420px;
+                margin: 0 auto 2rem;
+                display: flex;
+                align-items: flex-start;
+                gap: 15px;
+                text-align: left;
+                backdrop-filter: blur(10px);
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            ">
+                <div class="avatar" style="
+                    background: var(--ciphra-yellow);
+                    color: black;
+                    border-radius: 50%;
+                    width: 40px;
+                    height: 40px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    flex-shrink: 0;
+                    box-shadow: 0 0 15px rgba(255, 204, 0, 0.4);
+                ">
+                    <i data-lucide="cpu" style="width: 20px; height: 20px;"></i>
+                </div>
+                <div class="bubble-content" style="font-size: 0.9rem; line-height: 1.5; color: var(--text-bright);">
+                    <p style="margin: 0 0 0.5rem 0; font-weight: 700; color: var(--ciphra-yellow);">COMMANDER:</p>
+                    <p style="margin: 0;" id="nickname-greeting">¡Qué facha de nombre! Che, una pregunta técnica antes de arrancar: ¿Cómo querés que te llame en el día a día? (Puede ser Capitán, Colega, o tu nombre real, lo que te pinte).</p>
+                </div>
+            </div>
+            <input type="text" id="reg-nickname" class="cmd-input" placeholder="Ej: Capitán, Ciro, Colega" autocomplete="off"
+                spellcheck="false">
+            <button class="btn-next" onclick="goToPhase(5)">Siguiente</button>
+        </div>
+
+        <div id="phase-5" class="phase">
+            <span class="step-label">[ SECCIÓN 05 / PLAN DE OPERACIÓN ]</span>
+            <div class="plans-grid">
+                <div class="plan-card selected" onclick="selectPlan('free', this)">
+                    <div class="plan-icon"><i data-lucide="shield"></i></div>
+                    <h4>GRATIS</h4>
+                    <p>Acceso a Commander (Flash) y límites estándar de visión.</p>
+                </div>
+                <div class="plan-card" onclick="selectPlan('pro', this)">
+                    <div class="plan-icon"><i data-lucide="zap"></i></div>
+                    <h4>PRO</h4>
+                    <p>IA avanzada, Vision ilimitado y archivos de hasta 20MB.</p>
+                </div>
+            </div>
+            <button class="btn-next" onclick="goToPhase(6)">Siguiente</button>
+        </div>
+
+        <div id="phase-6" class="phase">
+            <span class="step-label">[ SECCIÓN 06 / FOTO DE PERFIL ]</span>
+            <div class="avatar-box" onclick="document.getElementById('avatar-in').click()">
+                <div id="avatar-placeholder"><i data-lucide="camera" style="width:40px; height:40px; opacity:0.3;"></i>
+                </div>
+                <img id="avatar-preview" style="display:none">
+            </div>
+            <input type="file" id="avatar-in" style="display:none" accept="image/*" onchange="handleImg(this)">
+            <button class="btn-next" id="btn-finish" onclick="completeRegistration()">Vincular</button>
+        </div>
+    </div>
+
+    <script src="auth.js"></script>
+    <script>
+        // PROTOCOLO DE LIMPIEZA INICIAL: limpiar sesiones previas (no la actual)
+        localStorage.removeItem('ciphra_token');
+        localStorage.removeItem('ciphra_user');
+
+        lucide.createIcons();
+        let currentImg = null;
+        let isTransitioning = false;
+
+        const glitchFonts = ['Space Mono', 'Syne', 'JetBrains Mono', 'Cedarville Cursive', 'Playfair Display'];
+
+        function triggerGlitch() {
+            if (isTransitioning) return;
+            const textEl = document.getElementById('glitch-text');
+            if (!textEl) return;
+            let count = 0;
+            const maxShuffles = 5;
+            textEl.classList.add('glitching');
+            const interval = setInterval(() => {
+                const randomFont = glitchFonts[Math.floor(Math.random() * glitchFonts.length)];
+                textEl.style.fontFamily = `'${randomFont}', sans-serif`;
+                textEl.style.fontStyle = randomFont === 'Playfair Display' ? 'italic' : 'normal';
+                const jitterX = (Math.random() - 0.5) * 8;
+                const jitterY = (Math.random() - 0.5) * 8;
+                textEl.style.transform = `translate(${jitterX}px, ${jitterY}px) scale(1.04)`;
+                count++;
+                if (count >= maxShuffles) {
+                    clearInterval(interval);
+                    textEl.style.fontFamily = "'League Spartan', sans-serif";
+                    textEl.style.fontStyle = "normal";
+                    textEl.style.transform = "translate(0,0) scale(1)";
+                    textEl.classList.remove('glitching');
+                }
+            }, 50);
+        }
+
+        window.onload = () => {
+            setTimeout(() => { document.getElementById('glow-system').classList.add('active'); }, 1000);
+            setTimeout(() => {
+                goToPhase(0);
+                setTimeout(triggerGlitch, 800);
+                setInterval(() => {
+                    const phase0 = document.getElementById('phase-0');
+                    if (phase0 && phase0.classList.contains('active')) triggerGlitch();
+                }, 10000);
+            }, 3000);
+        };
+
+        function goToPhase(idx) {
+            // Personalizar saludo del Commander con el username ingresado
+            if (idx === 4) {
+                const username = document.getElementById('reg-user').value || "Operador";
+                document.getElementById('nickname-greeting').innerHTML = `¡Qué facha de nombre, <strong>${username}</strong>! Che, una pregunta técnica antes de arrancar: ¿Cómo querés que te llame en el día a día? (Puede ser Capitán, Colega, o tu nombre real, lo que te pinte).`;
+            }
+
+            // Animación especial para la sección de PLANES (Hundimiento y Erupción Amarilla)
+            if (idx === 5) {
+                // 1. Las ondas viejas se van para abajo despacito
+                document.getElementById('glow-system').classList.add('sink-down');
+                
+                // 2. Violentamente salen las ondas amarillo Ciphra
+                setTimeout(() => {
+                    document.getElementById('glow-system-pro').classList.add('erupt');
+                    document.body.style.background = "#050400"; // Tinte ligerísimamente cálido
+                }, 800);
+
+                setTimeout(() => {
+                    executePhaseSwitch(idx);
+                }, 1300);
+                return;
+            }
+
+            executePhaseSwitch(idx);
+        }
+
+        function executePhaseSwitch(idx) {
+            const phases = document.querySelectorAll('.phase');
+            phases.forEach(p => p.classList.remove('active'));
+            setTimeout(() => {
+                phases.forEach(p => p.style.display = 'none');
+                const next = document.getElementById(`phase-${idx}`);
+                if (next) {
+                    next.style.display = 'block';
+                    setTimeout(() => {
+                        next.classList.add('active');
+                        const input = next.querySelector('input');
+                        if (input) input.focus();
+                    }, 50);
+                }
+            }, idx === 0 ? 0 : 600);
+        }
+
+        function handleImg(input) {
+            const file = input.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const MAX_SIZE = 200;
+                        let width = img.width, height = img.height;
+                        if (width > height) { if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; } }
+                        else { if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; } }
+                        canvas.width = width; canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        const compressedData = canvas.toDataURL('image/jpeg', 0.7);
+                        document.getElementById('avatar-placeholder').style.display = 'none';
+                        const preview = document.getElementById('avatar-preview');
+                        preview.src = compressedData; preview.style.display = 'block';
+                        currentImg = compressedData;
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        let selectedPlan = 'free';
+
+        function selectPlan(plan, el) {
+            selectedPlan = plan;
+            document.querySelectorAll('.plan-card').forEach(c => c.classList.remove('selected'));
+            el.classList.add('selected');
+        }
+
+        async function completeRegistration() {
+            const email = document.getElementById('reg-email').value;
+            const pass = document.getElementById('reg-pass').value;
+            const user = document.getElementById('reg-user').value;
+            const nickname = document.getElementById('reg-nickname').value || user;
+            const btn = document.getElementById('btn-finish');
+            if (!email || !pass) return alert("Datos requeridos.");
+
+            btn.innerHTML = '<i data-lucide="refresh-cw" class="spin" style="width:14px; margin-right:8px;"></i> SINCRONIZANDO';
+            lucide.createIcons(); btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password: pass, username: user, nickname: nickname, profile_pic: currentImg, plan: selectedPlan })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    isTransitioning = true;
+                    localStorage.setItem('ciphra_token', data.token);
+                    localStorage.setItem('ciphra_user', JSON.stringify(data.user));
+
+                    btn.innerHTML = "NÚCLEO VINCULADO";
+                    btn.style.background = "#22c55e";
+
+                    setTimeout(() => {
+                        const master = document.getElementById('master-container');
+                        const finalName = (user || "OPERADOR").toUpperCase();
+                        master.innerHTML = `<div style="font-family:'JetBrains Mono',monospace; font-size:0.7rem; letter-spacing:0.4em; color:rgba(255,255,255,0.4); animation:fadeIn 0.5s;">[ OPERADOR ${finalName} VINCULADO / ADAPTANDO ENTORNO... ]</div>`;
+                        document.querySelector('.bg-overlay').classList.add('commander-transition');
+                        document.getElementById('glow-system').classList.add('fade-out');
+                        setTimeout(() => { 
+                            console.log("REDIRECCIONANDO. PLAN:", selectedPlan);
+                            if (selectedPlan === 'pro') {
+                                window.location.href = 'checkout.html';
+                            } else {
+                                window.location.href = 'commander.html'; 
+                            }
+                        }, 3200);
+                    }, 1000);
+                } else {
+                    alert(data.message); btn.innerHTML = "REINTENTAR"; btn.disabled = false; lucide.createIcons();
+                }
+            } catch (e) { alert("Error de conexión."); btn.disabled = false; lucide.createIcons(); }
+        }
+
+        const canvas = document.getElementById('particle-canvas');
+        const ctx = canvas.getContext('2d');
+        let w, h, particles = [];
+        function init() { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; particles = []; for (let i = 0; i < 60; i++) particles.push({ x: Math.random() * w, y: Math.random() * h, r: Math.random() * 1.2, v: Math.random() * 0.3 + 0.1 }); }
+        function anim() { ctx.clearRect(0, 0, w, h); ctx.fillStyle = "rgba(255,255,255,0.15)"; particles.forEach(p => { ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill(); p.y -= p.v; if (p.y < 0) p.y = h; }); requestAnimationFrame(anim); }
+        init(); anim(); window.addEventListener('resize', init);
+    </script>
+</body>
+
+</html>

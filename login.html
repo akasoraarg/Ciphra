@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar Sesión | Ciphra</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=League+Spartan:wght@600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <link rel="stylesheet" href="ciphra.css">
+    <style>
+        .login-page {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 440px;
+            z-index: 10;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .login-logo {
+            font-family: var(--font-logo);
+            font-size: 2.2rem;
+            font-weight: 800;
+            letter-spacing: 0.15em;
+            margin-bottom: 0.5rem;
+            display: block;
+            text-decoration: none;
+        }
+
+        .login-header h2 {
+            font-size: 1.5rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            letter-spacing: -0.02em;
+        }
+
+        .login-header p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            margin-top: 0.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-wrapper i {
+            position: absolute;
+            left: 1rem;
+            color: var(--text-muted);
+            width: 18px;
+            pointer-events: none;
+        }
+
+        .form-input {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            padding: 0.8rem 1rem 0.8rem 3rem;
+            color: var(--text-primary);
+            font-family: var(--font-ui);
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #ffcc00;
+            background: rgba(0, 0, 0, 0.6);
+            box-shadow: 0 0 20px rgba(255, 204, 0, 0.1);
+        }
+
+        .form-actions {
+            margin-top: 2rem;
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 1rem;
+            background: var(--text-primary);
+            color: var(--bg-base);
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px) scale(1.01);
+            background: #ffcc00;
+            color: #000;
+            box-shadow: 0 10px 40px rgba(255, 204, 0, 0.3);
+        }
+
+        .login-footer {
+            margin-top: 2rem;
+            text-align: center;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            border-top: 1px solid var(--border-light);
+            padding-top: 2rem;
+        }
+
+        .btn-register-big {
+            width: 100%;
+            padding: 1rem;
+            background: rgba(255, 204, 0, 0.05);
+            border: 1px solid rgba(255, 204, 0, 0.3);
+            color: #ffcc00;
+            border-radius: 12px;
+            font-weight: 800;
+            font-size: 0.85rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-register-big:hover {
+            background: #ffcc00;
+            color: #000;
+            border-color: #ffcc00;
+            box-shadow: 0 0 30px rgba(255, 204, 0, 0.3);
+            transform: translateY(-2px) scale(1.02);
+        }
+
+        .social-login {
+            margin-top: 2.5rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .social-btn {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-light);
+            padding: 0.75rem;
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .social-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: var(--border-focus);
+        }
+
+        .divider {
+            margin: 2rem 0;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border-light);
+        }
+
+        /* Ambient Liquid Blobs for Login */
+        .blob {
+            position: absolute;
+            filter: blur(80px);
+            opacity: 0.15;
+            z-index: 1;
+            border-radius: 50%;
+            background: var(--ciphra-yellow);
+        }
+
+        .blob-1 { width: 400px; height: 400px; top: -100px; right: -100px; animation: float 20s infinite alternate; }
+        .blob-2 { width: 300px; height: 300px; bottom: -50px; left: -50px; background: #4338ca; animation: float 15s infinite alternate-reverse; }
+
+        @keyframes float {
+            from { transform: translate(0, 0); }
+            to { transform: translate(50px, 50px); }
+        }
+
+        /* TRANSICIÓN CINEMÁTICA */
+        .system-shutdown-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: #000;
+            z-index: 9999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* ── Mobile ── */
+        @media (max-width: 600px) {
+            .social-login { grid-template-columns: 1fr; }
+            .form-input, input, textarea, select { font-size: 16px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-page">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+
+        <div class="login-card glass-card">
+            <header class="login-header">
+                <a href="index.html" class="login-logo">
+                    <span class="logo-text">CIP<span class="logo-accent">H</span>RA</span>
+                </a>
+                <h2>Bienvenido de nuevo</h2>
+                <p>Ingeniería y precisión aplicada a tu mente.</p>
+            </header>
+
+            <form id="login-form">
+                <div class="form-group">
+                    <label class="form-label">Correo Electrónico</label>
+                    <div class="input-wrapper">
+                        <i data-lucide="mail"></i>
+                        <input type="email" class="form-input" placeholder="nombre@ejemplo.com" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Contraseña</label>
+                    <div class="input-wrapper">
+                        <i data-lucide="lock"></i>
+                        <input type="password" class="form-input" placeholder="••••••••" required>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn-login">
+                        Iniciar Sesión <i data-lucide="arrow-right"></i>
+                    </button>
+                </div>
+            </form>
+
+            <div class="divider">o continuar con</div>
+
+            <div id="google-login-btn" style="margin-top: 1rem;"></div>
+
+            <div class="social-login">
+                <button class="social-btn">
+                    <i data-lucide="github"></i> GitHub
+                </button>
+                <button class="social-btn">
+                    <i data-lucide="mail"></i> Email
+                </button>
+            </div>
+
+            <div class="login-footer">
+                <p style="margin-bottom: 1rem; font-size: 0.8rem; opacity: 0.6;">¿AÚN NO TIENES ACCESO?</p>
+                <button type="button" class="btn-register-big" id="register-trigger-btn">
+                    Vincular Nuevo Núcleo <i data-lucide="user-plus"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="auth.js"></script>
+    <script>
+        // 1. FUNCIÓN GLOBAL DE TRANSICIÓN
+        function triggerRegisterTransition() {
+            const overlay = document.createElement('div');
+            overlay.className = 'system-shutdown-overlay';
+            document.body.appendChild(overlay);
+
+            // Forzar renderizado
+            overlay.offsetHeight; 
+
+            setTimeout(() => {
+                overlay.style.opacity = '1';
+                overlay.style.pointerEvents = 'all';
+                setTimeout(() => {
+                    window.location.href = 'register.html';
+                }, 1000);
+            }, 50);
+        }
+
+        lucide.createIcons();
+        
+        // 2. CAPTURAR EL CLICK DE FORMA ROBUSTA
+        document.addEventListener('DOMContentLoaded', () => {
+            const regBtn = document.getElementById('register-trigger-btn');
+            if (regBtn) {
+                regBtn.onclick = (e) => {
+                    e.preventDefault();
+                    triggerRegisterTransition();
+                };
+            }
+        });
+
+        // Check if already logged in to show identity
+        async function checkIdentity() {
+            const isAuth = await Auth.check();
+            const user = Auth.getUser();
+            if (isAuth && user) {
+                // Ya está logueado → redirigir directo, no mostrar el form
+                const urlParams = new URLSearchParams(window.location.search);
+                const redirect = urlParams.get('redirect') || 'index.html';
+                window.location.href = redirect;
+                return;
+                const name = (user.username || (user.email ? user.email.split('@')[0] : "OPERADOR")).toUpperCase();
+                
+                const pillWrap = document.createElement('div');
+                pillWrap.style.position = 'absolute';
+                pillWrap.style.top = '1.5rem';
+                pillWrap.style.right = '5%';
+                pillWrap.style.zIndex = '100';
+                pillWrap.className = 'user-pill-wrap';
+                
+                let avatarHTML = '';
+                if (user.profile_pic) {
+                    avatarHTML = `<img src="${user.profile_pic}" class="pill-avatar">`;
+                } else {
+                    const initial = name.charAt(0);
+                    const colors = ['#8b5cf6', '#ef4444', '#10b981', '#3b82f6', '#f59e0b', '#ec4899'];
+                    const colorIndex = initial.charCodeAt(0) % colors.length;
+                    avatarHTML = `<div class="pill-avatar default-avatar" style="background:${colors[colorIndex]}">${initial}</div>`;
+                }
+
+                pillWrap.innerHTML = `
+                    <div class="user-pill" id="login-pill-btn">
+                        ${avatarHTML}
+                        <span style="margin-left:8px">${name}</span>
+                        <i data-lucide="chevron-down" class="pill-chevron" style="margin-left:8px; width:14px"></i>
+                    </div>
+                    <div class="pill-dropdown">
+                        <a href="index.html" class="dp-item"><i data-lucide="home"></i> Inicio</a>
+                        <a href="commander.html" class="dp-item"><i data-lucide="cpu"></i> Commander</a>
+                        <div class="dp-sep"></div>
+                        <button class="dp-item danger" onclick="Auth.logout()"><i data-lucide="log-out"></i> Salir</button>
+                    </div>
+                `;
+                document.body.appendChild(pillWrap);
+                
+                pillWrap.querySelector('#login-pill-btn').onclick = (e) => {
+                    e.stopPropagation();
+                    pillWrap.classList.toggle('open');
+                };
+                document.addEventListener('click', () => pillWrap.classList.remove('open'));
+                lucide.createIcons();
+            }
+        }
+        checkIdentity();
+
+        const loginForm = document.getElementById('login-form');
+        const submitBtn = loginForm.querySelector('button');
+        const originalBtnHtml = submitBtn.innerHTML;
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = e.target.querySelector('input[type="email"]').value;
+            const password = e.target.querySelector('input[type="password"]').value;
+            
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i data-lucide="loader-2" class="spin"></i> Verificando...';
+            lucide.createIcons();
+            
+            const result = await Auth.login(email, password);
+            
+            if (result.success) {
+                submitBtn.innerHTML = '<i data-lucide="check"></i> Éxito';
+                lucide.createIcons();
+                
+                const urlParams = new URLSearchParams(window.location.search);
+                const redirect = urlParams.get('redirect') || 'index.html';
+                
+                setTimeout(() => {
+                    window.location.href = redirect;
+                }, 1000);
+            } else {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnHtml;
+                alert(result.message || 'Error al iniciar sesión');
+                lucide.createIcons();
+            }
+        });
+
+        // Google Auth Integration
+        async function handleCredentialResponse(response) {
+            const payload = JSON.parse(atob(response.credential.split('.')[1]));
+            const result = await Auth.googleLogin(payload.email, payload.name);
+            if (result.success) {
+                const urlParams = new URLSearchParams(window.location.search);
+                const redirect = urlParams.get('redirect') || 'index.html';
+                window.location.href = redirect;
+            } else {
+                alert("Error al sincronizar con el servidor");
+            }
+        }
+
+        window.onload = function () {
+            // Check identity immediately
+            checkIdentity();
+            
+            const clientId = "322927025510-t2n29thpdofgu4o7tv2bs3h78rid8gso.apps.googleusercontent.com";
+            google.accounts.id.initialize({
+                client_id: clientId,
+                callback: handleCredentialResponse
+            });
+            google.accounts.id.renderButton(
+                document.getElementById("google-login-btn"),
+                { theme: "outline", size: "large", width: "440" }  
+            );
+        }
+    </script>
+</body>
+</html>

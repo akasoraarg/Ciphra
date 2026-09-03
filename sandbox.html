@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ciphra - Sandbox Experimental</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=League+Spartan:wght@700;800;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="ciphra.css">
+    <link rel="stylesheet" href="commander.css">
+    <style>
+        .sandbox-header-badge {
+            background: rgba(255, 204, 0, 0.1);
+            color: var(--ciphra-yellow);
+            border: 1px solid rgba(255, 204, 0, 0.3);
+            border-radius: 6px;
+            font-size: 10px;
+            padding: 2px 8px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .friend-req-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            padding: 8px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .friend-req-info {
+            font-size: 0.8rem;
+            color: var(--text-bright);
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .friend-req-actions {
+            display: flex;
+            gap: 4px;
+        }
+        .req-btn {
+            flex: 1;
+            border: none;
+            padding: 4px;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .req-btn.accept {
+            background: #22c55e;
+            color: black;
+        }
+        .req-btn.reject {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-dim);
+        }
+
+        /* ── Mobile ── */
+        @media (max-width: 600px) {
+            .friend-req-actions { flex-wrap: wrap; }
+            .req-btn { flex: 1; }
+            input, textarea, select { font-size: 16px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="logo-section">
+            <a href="index.html" style="text-decoration: none;">
+                <div class="logo-text">CIP<span class="logo-accent">H</span>RA</div>
+            </a>
+            <div style="font-size: 0.6rem; color: var(--ciphra-yellow); letter-spacing: 0.1em; font-weight: 800; text-transform: uppercase; margin-top: 2px;">🧪 SANDBOX</div>
+        </div>
+
+        <!-- Banner Experimental -->
+        <div class="beta-sandbox-banner" style="
+            background: rgba(255, 204, 0, 0.02);
+            border: 1px solid rgba(255, 204, 0, 0.15);
+            border-radius: 10px;
+            padding: 10px;
+            margin-bottom: 1.5rem;
+            font-size: 0.72rem;
+            color: var(--text-dim);
+            line-height: 1.35;
+        ">
+            <div style="display: flex; align-items: center; gap: 6px; color: var(--ciphra-yellow); font-weight: 700; margin-bottom: 4px; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                <i data-lucide="flask-conical" style="width: 12px; height: 12px;"></i> ENLACE SANDBOX BETA
+            </div>
+            Canal de pruebas multijugador y chats cifrados directos entre operadores.
+        </div>
+
+        <button class="new-chat-btn" onclick="openAddFriendPrompt()" style="
+            background: rgba(255, 204, 0, 0.1);
+            color: var(--ciphra-yellow);
+            border: 1px dashed var(--ciphra-yellow);
+            margin-bottom: 1.5rem;
+        ">
+            <i data-lucide="user-plus"></i> Agregar amigo
+        </button>
+
+        <!-- Solicitudes Recibidas -->
+        <div id="pending-requests-section" style="display: none; margin-bottom: 1.5rem;">
+            <div style="font-size: 0.7rem; letter-spacing: 0.1em; color: var(--ciphra-yellow); font-weight: 700; margin-bottom: 0.5rem; text-transform: uppercase;">Solicitudes Recibidas</div>
+            <div id="pendingRequestsList" style="display: flex; flex-direction: column; gap: 8px;">
+                <!-- Cargado por JS -->
+            </div>
+        </div>
+
+        <!-- Chats Directos -->
+        <div style="font-size: 0.7rem; letter-spacing: 0.1em; color: var(--text-dim); font-weight: 700; margin-bottom: 0.5rem; text-transform: uppercase;">Chats Directos</div>
+        <div class="chat-list" id="directChatsList" style="margin-bottom: 1.5rem;">
+            <!-- Cargado por JS -->
+        </div>
+
+        <!-- Lista de Amigos -->
+        <div style="font-size: 0.7rem; letter-spacing: 0.1em; color: var(--text-dim); font-weight: 700; margin-bottom: 0.5rem; text-transform: uppercase;">Amigos</div>
+        <div class="chat-list" id="friendsList">
+            <!-- Cargado por JS -->
+        </div>
+
+        <div style="margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--glass-border);">
+            <a href="commander.html" style="color: var(--text-bright); font-weight: 700; text-decoration: none; font-size: 0.85rem; display: flex; align-items: center; gap: 8px;">
+                <i data-lucide="cpu" style="width: 16px;"></i> Regresar a Commander
+            </a>
+            <a href="index.html" style="color: var(--text-dim); text-decoration: none; font-size: 0.85rem; display: flex; align-items: center; gap: 8px; margin-top: 12px;">
+                <i data-lucide="home" style="width: 16px;"></i> Inicio
+            </a>
+        </div>
+    </aside>
+
+    <!-- Main Chat Area -->
+    <main class="main-chat">
+        <div class="topbar" id="topbar-ui">
+            <div id="activeChatTitle" style="font-weight: 600; color: var(--text-bright); flex:1;">Selecciona un chat de amigos</div>
+            <div class="nominal-badge" style="margin-right: 1rem; background: rgba(255, 204, 0, 0.1); color: var(--ciphra-yellow); border: 1px solid rgba(255, 204, 0, 0.3);">🧪 SANDBOX</div>
+            <div class="user-pill-wrap" id="user-pill-wrap">
+                <div class="user-pill" id="user-pill-btn">
+                    <span class="pill-dot" style="background:#22c55e; box-shadow:0 0 10px #22c55e;"></span>
+                    <span id="operator-name">---</span>
+                    <i data-lucide="chevron-down" class="pill-chevron"></i>
+                </div>
+                <div class="pill-dropdown">
+                    <!-- Sección Perfil (Izquierda) -->
+                    <div class="dp-profile">
+                        <div id="dp-avatar-box"></div>
+                        <div class="dp-user-info">
+                            <div style="display:flex; align-items:center; gap:6px;">
+                                <span class="dp-user-name" id="dp-user-name">OPERADOR</span>
+                                <span id="pro-badge" class="glass-badge" style="display:none; font-size:10px; padding:2px 6px; background:var(--ciphra-yellow); color:#000; border-radius:4px; font-weight:800;">PRO</span>
+                            </div>
+                            <span class="dp-user-email" id="dp-user-email">---</span>
+                        </div>
+                    </div>
+                    <!-- Sección Links (Derecha) -->
+                    <div class="dp-links">
+                        <a href="checkout.html" class="dp-item" id="upgrade-link" style="display:none; color:var(--ciphra-yellow); font-weight:700;"><i data-lucide="zap" fill="currentColor"></i> ASCENDER A PRO</a>
+                        <a href="index.html" class="dp-item"><i data-lucide="home"></i> Inicio</a>
+                        <a href="commander.html" class="dp-item"><i data-lucide="cpu"></i> Regresar a Commander</a>
+                        <a href="#" class="dp-item" onclick="alert('Próximamente'); return false;"><i data-lucide="user-cog"></i> Personalizar Perfil</a>
+                        <a href="#" class="dp-item" onclick="alert('Próximamente'); return false;"><i data-lucide="settings"></i> Configuración</a>
+                        <a href="#" class="dp-item" onclick="redeemCode(); return false;"><i data-lucide="ticket"></i> Canjear Código</a>
+                        <div class="dp-sep"></div>
+                        <button class="dp-item danger" id="logout-btn"><i data-lucide="log-out"></i> Cerrar Sesión</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="chat-container" id="chatContainer">
+            <div style="text-align: center; color: var(--text-dim); margin-top: 20vh;">
+                <i data-lucide="flask-conical" style="width: 40px; height: 40px; margin-bottom: 1rem; color: var(--ciphra-yellow);"></i>
+                <h2>CANAL SANDBOX 1.0</h2>
+                <p>Enlace de pruebas en vivo. Seleccioná un amigo en la barra lateral para iniciar.</p>
+            </div>
+        </div>
+
+        <div class="input-area">
+            <div class="input-box">
+                <input type="file" id="img-input" accept="image/*" style="display:none;" onchange="handleImageAttach(event)">
+                <!-- Columna lateral: thumbnails apiladas verticalmente -->
+                <div id="thumb-strip" style="display:none;"></div>
+                <!-- Columna principal: controles -->
+                <div class="input-inner">
+                    <div class="input-controls">
+                        <button class="attach-btn" onclick="document.getElementById('img-input').click()" title="Adjuntar imagen">
+                            <i data-lucide="paperclip"></i>
+                        </button>
+                    </div>
+                    <textarea id="userInput" placeholder="Escribí un mensaje directo cifrado..." rows="1" onkeydown="handleKey(event)"></textarea>
+                    <button class="send-btn" onclick="sendMessage()">
+                        <i data-lucide="send"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- JS Core scripts -->
+    <script src="auth.js"></script>
+    <script src="sandbox.js"></script>
+</body>
+</html>

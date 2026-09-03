@@ -1,0 +1,48 @@
+# Entorno virtual
+venv/
+.env
+
+# Datos persistentes (Súper importante ignorar esto)
+users.json
+chats.json
+sessions.json
+downloads.json
+payments_pending.json
+# Backups / dumps con datos reales de usuarios
+*.bak
+*.encrypted_backup
+
+# Artefactos de build (binarios pesados — GitHub rechaza >100MB)
+*.dmg
+Ciphra.app/
+build/
+dist/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+.claude/
+
+# Documentación interna y utilidades de dev (no publicar)
+SECURITY_AUDIT.md
+scratch/
+
+# Excluir carpeta de respaldos y sub-repositorios
+expo/
+ciphra-ai-backend/
+
+# Ignorar datos locales y bases de datos
+*.json
+*.bak
+*.encrypted_backup

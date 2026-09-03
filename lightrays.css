@@ -1,0 +1,15 @@
+/* LightRays — contenedor de fondo (port de reactbits.dev). Va DETRÁS del ColorBends:
+ * fixed, pantalla completa, z-index 0 y antes del #colorBends en el DOM → pinta detrás. */
+.light-rays-container{
+  position:fixed;
+  inset:0;
+  width:100%;
+  height:100%;
+  pointer-events:none;
+  overflow:hidden;
+  z-index:0;          /* mismo plano que #colorBends, pero al ir antes en el DOM queda atrás */
+}
+.light-rays-container canvas{display:block;width:100%;height:100%;}
+@media (max-width:880px){
+  /* En mobile el ColorBends se apaga; las rays solas quedan lindas y baratas, las dejamos. */
+}

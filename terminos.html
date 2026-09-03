@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Términos y Condiciones | Ciphra</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=League+Spartan:wght@700;800;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root{--bg:#0B0B0D;--panel:#141418;--gold:#FBBF24;--teal:#14B8A6;--text:#f1f1f1;
+              --muted:rgba(255,255,255,0.55);--border:rgba(255,255,255,0.08);
+              --fd:'League Spartan',sans-serif;--fb:'Inter',sans-serif;}
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body{background:var(--bg);color:var(--text);font-family:var(--fb);line-height:1.65;
+             -webkit-font-smoothing:antialiased;}
+        body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+            background:radial-gradient(60vw 50vw at 80% -10%,rgba(251,191,36,0.07),transparent 60%);}
+        .wrap{position:relative;z-index:1;max-width:780px;margin:0 auto;padding:32px 24px 120px;}
+        .top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:48px;flex-wrap:wrap;}
+        .back{display:inline-flex;align-items:center;gap:8px;color:var(--muted);text-decoration:none;
+              font-size:0.88rem;font-weight:500;transition:color .15s;}
+        .back:hover{color:var(--text);}
+        .back i{width:16px;height:16px;}
+        .logo{font-family:var(--fd);font-weight:900;font-size:1.3rem;letter-spacing:0.04em;text-decoration:none;color:var(--text);}
+        .logo .h{color:var(--gold);}
+        h1{font-family:var(--fd);font-weight:800;font-size:clamp(2.2rem,6vw,3.2rem);line-height:1.05;margin-bottom:10px;}
+        .updated{color:var(--muted);font-size:0.85rem;margin-bottom:6px;}
+        .prevail{color:var(--teal);font-size:0.8rem;background:rgba(20,184,166,0.08);
+            border:1px solid rgba(20,184,166,0.25);border-radius:10px;padding:10px 14px;margin:18px 0 0;}
+        .prevail:empty{display:none;}
+        .doc{margin-top:40px;}
+        .sec{margin-bottom:34px;}
+        .sec h2{font-family:var(--fd);font-weight:800;font-size:1.25rem;color:var(--text);margin-bottom:12px;}
+        .sec p{color:rgba(255,255,255,0.72);margin-bottom:12px;font-size:0.95rem;}
+        .sec ul{list-style:none;margin:0 0 12px;padding:0;}
+        .sec li{color:rgba(255,255,255,0.72);font-size:0.95rem;padding-left:20px;position:relative;margin-bottom:8px;}
+        .sec li::before{content:"";position:absolute;left:2px;top:9px;width:6px;height:6px;border-radius:50%;background:var(--gold);}
+        .sec b{color:var(--text);font-weight:600;}
+        .sec i{color:var(--muted);font-style:italic;}
+        .sec a{color:var(--gold);}
+        .switch-wrap{display:flex;justify-content:flex-end;margin-bottom:20px;}
+        @media (prefers-reduced-motion: reduce){*{transition:none!important;}}
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <div class="top">
+            <a href="index.html" class="back"><i data-lucide="arrow-left"></i> <span data-i18n="legal.back">Volver al inicio</span></a>
+            <a href="index.html" class="logo">CIP<span class="h">H</span>RA</a>
+        </div>
+        <div class="switch-wrap"><div data-lang-switcher></div></div>
+        <h1 data-i18n="legal.terms.title">Términos y Condiciones</h1>
+        <div class="updated" data-i18n="legal.updated">Última actualización: junio de 2026</div>
+        <div class="prevail" data-i18n="legal.prevail"></div>
+        <div class="doc" id="doc"></div>
+    </div>
+
+    <script src="i18n.js"></script>
+    <script src="legal.js"></script>
+    <script src="cookies.js"></script>
+    <script>
+        function renderLegal() {
+            const lang = (window.I18N && I18N.lang) || 'es';
+            const data = (window.LEGAL && LEGAL.terminos[lang]) || LEGAL.terminos.es;
+            document.getElementById('doc').innerHTML = data.map(s =>
+                `<section class="sec"><h2>${s.h}</h2>${s.p}</section>`).join('');
+            if (window.lucide) lucide.createIcons();
+        }
+        renderLegal();
+        window.addEventListener('i18n:change', renderLegal);
+        if (window.lucide) lucide.createIcons();
+    </script>
+</body>
+</html>
