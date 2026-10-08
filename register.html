@@ -2,6 +2,8 @@
 <html lang="es">
 
 <head>
+    <link rel="stylesheet" href="ui-loading.css">
+    <script src="ui-loading.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registrate | Ciphra</title>
@@ -378,7 +380,7 @@
 
     <canvas id="particle-canvas"></canvas>
 
-    <div id="master-container">
+    <div id="master-container" data-auth-action data-skeleton="form">
         <div id="phase-0" class="phase">
             <div style="margin-bottom: 2.5rem;">
                 <span id="status-pill" style="
@@ -484,7 +486,7 @@
             <div class="avatar-box" onclick="document.getElementById('avatar-in').click()">
                 <div id="avatar-placeholder"><i data-lucide="camera" style="width:40px; height:40px; opacity:0.3;"></i>
                 </div>
-                <img id="avatar-preview" style="display:none">
+                <img loading="lazy" decoding="async" id="avatar-preview" style="display:none">
             </div>
             <input type="file" id="avatar-in" style="display:none" accept="image/*" onchange="handleImg(this)">
             <button class="btn-next" id="btn-finish" onclick="completeRegistration()">Vincular</button>
@@ -493,9 +495,6 @@
 
     <script src="auth.js"></script>
     <script>
-        // PROTOCOLO DE LIMPIEZA INICIAL: limpiar sesiones previas (no la actual)
-        localStorage.removeItem('ciphra_token');
-        localStorage.removeItem('ciphra_user');
 
         lucide.createIcons();
         let currentImg = null;
@@ -528,23 +527,21 @@
             }, 50);
         }
 
-        window.onload = () => {
-            setTimeout(() => { document.getElementById('glow-system').classList.add('active'); }, 1000);
-            setTimeout(() => {
-                goToPhase(0);
-                setTimeout(triggerGlitch, 800);
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('glow-system').classList.add('active');
+            goToPhase(0);
+            if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
                 setInterval(() => {
-                    const phase0 = document.getElementById('phase-0');
-                    if (phase0 && phase0.classList.contains('active')) triggerGlitch();
+                    if (document.getElementById('phase-0')?.classList.contains('active')) triggerGlitch();
                 }, 10000);
-            }, 3000);
-        };
+            }
+        });
 
         function goToPhase(idx) {
             // Personalizar saludo del Commander con el username ingresado
             if (idx === 4) {
                 const username = document.getElementById('reg-user').value || "Operador";
-                document.getElementById('nickname-greeting').innerHTML = `¡Qué facha de nombre, <strong>${username}</strong>! Che, una pregunta técnica antes de arrancar: ¿Cómo querés que te llame en el día a día? (Puede ser Capitán, Colega, o tu nombre real, lo que te pinte).`;
+                document.getElementById('nickname-greeting').textContent = `¡Qué facha de nombre, ${username}! Che, una pregunta técnica antes de arrancar: ¿Cómo querés que te llame en el día a día? (Puede ser Capitán, Colega, o tu nombre real, lo que te pinte).`;
             }
 
             // Animación especial para la sección de PLANES (Hundimiento y Erupción Amarilla)
@@ -631,24 +628,22 @@
             lucide.createIcons(); btn.disabled = true;
 
             try {
-                const res = await fetch('/api/auth/register', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password: pass, username: user, nickname: nickname, profile_pic: currentImg, plan: selectedPlan })
-                });
-                const data = await res.json();
+                const data = await Auth.register(email, pass, { username: user, nickname, profile_pic: currentImg || '' });
+                if (data.success && data.requires_confirmation) {
+                    alert(data.message);
+                    window.location.href = 'login.html';
+                    return;
+                }
 
                 if (data.success) {
                     isTransitioning = true;
-                    localStorage.setItem('ciphra_token', data.token);
-                    localStorage.setItem('ciphra_user', JSON.stringify(data.user));
 
                     btn.innerHTML = "NÚCLEO VINCULADO";
                     btn.style.background = "#22c55e";
 
                     setTimeout(() => {
                         const master = document.getElementById('master-container');
-                        const finalName = (user || "OPERADOR").toUpperCase();
+                        const finalName = (user || "OPERADOR").toUpperCase().replace(/[<>&"']/g, '');
                         master.innerHTML = `<div style="font-family:'JetBrains Mono',monospace; font-size:0.7rem; letter-spacing:0.4em; color:rgba(255,255,255,0.4); animation:fadeIn 0.5s;">[ OPERADOR ${finalName} VINCULADO / ADAPTANDO ENTORNO... ]</div>`;
                         document.querySelector('.bg-overlay').classList.add('commander-transition');
                         document.getElementById('glow-system').classList.add('fade-out');
@@ -672,7 +667,10 @@
         let w, h, particles = [];
         function init() { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; particles = []; for (let i = 0; i < 60; i++) particles.push({ x: Math.random() * w, y: Math.random() * h, r: Math.random() * 1.2, v: Math.random() * 0.3 + 0.1 }); }
         function anim() { ctx.clearRect(0, 0, w, h); ctx.fillStyle = "rgba(255,255,255,0.15)"; particles.forEach(p => { ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill(); p.y -= p.v; if (p.y < 0) p.y = h; }); requestAnimationFrame(anim); }
-        init(); anim(); window.addEventListener('resize', init);
+        PageUI.visible(canvas, () => {
+            if (matchMedia('(prefers-reduced-motion: reduce)').matches || navigator.connection?.saveData) return;
+            init(); anim(); window.addEventListener('resize', init);
+        });
     </script>
 </body>
 

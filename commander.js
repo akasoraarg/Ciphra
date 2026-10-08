@@ -1,10 +1,7 @@
-let currentChatId = 'demo-chat-1';
+let currentChatId = null;
+let chatNavigation = 0;
+let chatAbort;
 let attachedImages = [];   // Array de { data: base64, mime: string }
-
-// Chat local de demostración para trabajar sin servidor
-let localChats = [
-    { id: 'demo-chat-1', title: 'Espacio de trabajo Ciphra', created_at: new Date().toISOString(), messages: [] }
-];
 
 // ── Anti-XSS ──
 function escapeHtml(str) {
@@ -28,13 +25,14 @@ function buildThinkingBlock(thinking) {
     const panel = document.createElement('div');
     panel.className = 'thinking-panel';
     panel.style.display = 'none';
-    panel.innerHTML = safeMarkdown(thinking);
+    panel.textContent = thinking;
+    let rendered = false;
     btn.onclick = () => {
         const open = panel.style.display === 'none';
         panel.style.display = open ? 'block' : 'none';
         const caret = btn.querySelector('.think-caret');
         if (caret) caret.textContent = open ? '▴' : '▾';
-        if (open && window.MathJax) MathJax.typesetPromise([panel]);
+        if (open && !rendered) { rendered = true; PageUI.rich(panel, thinking); }
     };
     wrap.appendChild(btn);
     wrap.appendChild(panel);
@@ -68,36 +66,34 @@ function buildSourcesChip(sources) {
     return wrap;
 }
 
-const OPERADOR_DEMO = {
-    username: 'OPERADOR_DEMO',
-    nickname: 'OPERADOR_DEMO',
-    email: 'operador@ciphra.io',
-    plan: 'pro'
-};
-
 function getToken() {
-    return (typeof Auth !== 'undefined' && Auth._getStorageItem) 
-        ? Auth._getStorageItem('ciphra_token') || 'dev_token_pro' 
-        : 'dev_token_pro';
+    return Auth._getStorageItem('ciphra_token') || '';
+}
+
+async function chatRequest(url, options = {}) {
+    const response = await fetch(url, options);
+    if (response.status === 401) {
+        Auth.clear();
+        Auth.loginRedirect();
+        throw new Error('La sesión venció. Iniciá sesión de nuevo.');
+    }
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || data.detail || 'No se pudo completar la solicitud.');
+    return data;
 }
 
 function authHeaders() {
     return { 'Authorization': getToken() };
 }
 
-// Cargar chats (con fallback a local en modo offline/desarrollo sin bloqueo por 401 o desconexión)
+// Load only chats belonging to a verified session.
 async function loadChats() {
-    let chats = localChats;
+    let chats;
     try {
-        const res = await fetch('/api/chats', { headers: authHeaders() });
-        if (res.ok) {
-            const data = await res.json();
-            if (Array.isArray(data)) chats = data;
-        } else if (res.status === 401) {
-            console.warn("401 Unauthorized en /api/chats - manteniendo usuario en memoria (modo local/mock).");
-        }
-    } catch (e) {
-        console.warn("API desconectada en loadChats, usando modo mock local:", e);
+        chats = await chatRequest('/api/chats', { headers: authHeaders() });
+    } catch (error) {
+        PageUI.error('#chatList', () => loadChats(), error.message);
+        return;
     }
 
     const chatList = document.getElementById('chatList');
@@ -127,44 +123,28 @@ async function loadChats() {
 }
 
 async function createChat() {
-    const newId = 'chat-' + Date.now();
-    const newChatObj = { id: newId, title: 'Nuevo chat', created_at: new Date().toISOString(), messages: [] };
-    
     try {
-        const res = await fetch('/api/chats/create', { method: 'POST', headers: authHeaders() });
-        if (res.ok) {
-            const data = await res.json();
-            currentChatId = data.chat_id || newId;
-        } else {
-            if (res.status === 401) {
-                console.warn("401 Unauthorized en /api/chats/create - creando chat local.");
-            }
-            localChats.push(newChatObj);
-            currentChatId = newId;
-        }
-    } catch(e) {
-        console.warn("API desconectada en createChat, creando chat local:", e);
-        localChats.push(newChatObj);
-        currentChatId = newId;
+        const data = await chatRequest('/api/chats/create', { method: 'POST', headers: authHeaders() });
+        currentChatId = data.chat_id;
+        await loadChats();
+        await openChat(currentChatId);
+    } catch (error) {
+        alert(error.message);
     }
-
-    await loadChats();
-    openChat(currentChatId);
 }
 
 async function openChat(id) {
-    currentChatId = id;
-    let chat = localChats.find(c => c.id === id) || { id, title: 'Chat Ciphra', messages: [] };
-
+    const navigation = ++chatNavigation;
+    chatAbort?.abort();
+    chatAbort = new AbortController();
+    let chat;
     try {
-        const res = await fetch(`/api/chats/${id}`, { headers: authHeaders() });
-        if (res.ok) {
-            chat = await res.json();
-        } else if (res.status === 401) {
-            console.warn(`401 Unauthorized en /api/chats/${id} - usando chat local.`);
-        }
-    } catch(e) {
-        console.warn(`API desconectada al abrir chat ${id}:`, e);
+        chat = await chatRequest(`/api/chats/${id}`, { headers: authHeaders(), signal: chatAbort.signal });
+        if (navigation !== chatNavigation) return;
+        currentChatId = id;
+    } catch (error) {
+        if (navigation === chatNavigation) PageUI.error('#chatContainer', () => openChat(id), error.message);
+        return;
     }
 
     const titleElem = document.getElementById('activeChatTitle');
@@ -195,9 +175,9 @@ async function openChat(id) {
         if (window.lucide) lucide.createIcons();
     } else {
         document.querySelector('.main-chat')?.classList.remove('is-empty');
-        chat.messages.forEach(msg => {
-            appendMessage(msg.role, msg.content, null, msg.sources, msg.thinking);
-        });
+        const history = await import('./ui-history.js');
+        if (navigation !== chatNavigation) return;
+        history.mount(container, chat.messages, msg => appendMessage(msg.role, msg.content, null, msg.sources, msg.thinking));
     }
 }
 
@@ -282,44 +262,35 @@ async function sendMessage() {
     appendMessage('assistant', '', thinkingId);
     const thinkingElem = document.getElementById(thinkingId);
     if (thinkingElem) {
-        thinkingElem.innerHTML = `<div class="thinking-dots"><span></span><span></span><span></span></div><span class="thinking-phrase">Procesando consulta...</span>`;
+        thinkingElem.style.position = 'relative';
+        thinkingElem.style.minHeight = '180px';
+        thinkingElem.appendChild(PageUI.skeleton('chat'));
     }
 
-    let assistantResponse = null;
     try {
-        const res = await fetch(`/api/chats/${currentChatId || 'demo-chat-1'}/message`, {
+        if (!currentChatId) throw new Error('Creá un chat antes de enviar un mensaje.');
+        const data = await chatRequest(`/api/chats/${currentChatId}/message`, {
             method: 'POST',
             headers: { ...authHeaders(), 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message, images: attachedImages, engine: window.selectedMotor || 'synapse' })
+            body: JSON.stringify({ message, image_data: attachedImages[0]?.data,
+                image_mime: attachedImages[0]?.mime, engine: window.getSelectedMotor?.() || 'synapse' })
         });
-        if (res.ok) {
-            const data = await res.json();
-            assistantResponse = data.content || data.response;
-        } else if (res.status === 401) {
-            console.warn("401 Unauthorized en sendMessage - utilizando respuesta mock local.");
-        }
-    } catch(e) {
-        console.warn("API no disponible al enviar mensaje, usando respuesta mock local:", e);
-    }
-
-    setTimeout(() => {
-        const wrapper = thinkingElem ? thinkingElem.closest('.message-wrapper') : null;
-        if (wrapper) wrapper.remove();
+        appendMessage('assistant', data.reply || data.content || data.response, null, data.sources, data.thinking);
         clearAllImages();
-        const content = assistantResponse || 'Esta es una respuesta simulada en modo desarrollo para evaluar la interfaz de Ciphra.';
-        appendMessage('assistant', content);
-    }, 1000);
+    } catch (error) {
+        alert(error.message);
+        input.value = message;
+    } finally {
+        thinkingElem?.closest('.message-wrapper')?.remove();
+    }
 }
 
 async function deleteChat(id) {
-    localChats = localChats.filter(c => c.id !== id);
     try {
-        const res = await fetch(`/api/chats/${id}`, { method: 'DELETE', headers: authHeaders() });
-        if (res.status === 401) {
-            console.warn(`401 Unauthorized en DELETE /api/chats/${id}.`);
-        }
-    } catch(e) {
-        console.warn("API desconectada al eliminar chat:", e);
+        await chatRequest(`/api/chats/${id}`, { method: 'DELETE', headers: authHeaders() });
+    } catch (error) {
+        alert(error.message);
+        return;
     }
     if (currentChatId === id) {
         currentChatId = null;
@@ -351,9 +322,10 @@ function appendMessage(role, content, id = null, sources = null, thinking = null
     lucide.createIcons();
 
     if (role === 'assistant' && !id) {
-        msgDiv.innerHTML = safeMarkdown(content);
-        if (window.MathJax) MathJax.typesetPromise([msgDiv]);
-        if (window.renderDiagrams) window.renderDiagrams(msgDiv);
+        const body = document.createElement('div');
+        msgDiv.appendChild(body);
+        PageUI.visible(body, () => PageUI.rich(body, content));
+        body.textContent = content || '';
         if (sources && sources.length) {
             msgDiv.insertBefore(buildSourcesChip(sources), msgDiv.firstChild);
         }
@@ -375,4 +347,6 @@ function handleKey(e) {
     }
 }
 
-window.onload = loadChats;
+loadChats = PageUI.wrap(loadChats, '#chatList', 'list');
+openChat = PageUI.wrap(openChat, '#chatContainer', 'chat');
+createChat = PageUI.wrap(createChat, '#chatContainer', 'chat');

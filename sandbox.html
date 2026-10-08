@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <link rel="stylesheet" href="ui-loading.css">
+    <script src="ui-loading.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ciphra - Sandbox Experimental</title>
@@ -121,13 +123,13 @@
 
         <!-- Chats Directos -->
         <div style="font-size: 0.7rem; letter-spacing: 0.1em; color: var(--text-dim); font-weight: 700; margin-bottom: 0.5rem; text-transform: uppercase;">Chats Directos</div>
-        <div class="chat-list" id="directChatsList" style="margin-bottom: 1.5rem;">
+        <div class="chat-list" id="directChatsList" data-auth-loading data-skeleton="list" style="margin-bottom: 1.5rem;">
             <!-- Cargado por JS -->
         </div>
 
         <!-- Lista de Amigos -->
         <div style="font-size: 0.7rem; letter-spacing: 0.1em; color: var(--text-dim); font-weight: 700; margin-bottom: 0.5rem; text-transform: uppercase;">Amigos</div>
-        <div class="chat-list" id="friendsList">
+        <div class="chat-list" id="friendsList" data-auth-loading data-skeleton="list">
             <!-- Cargado por JS -->
         </div>
 
@@ -147,7 +149,7 @@
             <div id="activeChatTitle" style="font-weight: 600; color: var(--text-bright); flex:1;">Selecciona un chat de amigos</div>
             <div class="nominal-badge" style="margin-right: 1rem; background: rgba(255, 204, 0, 0.1); color: var(--ciphra-yellow); border: 1px solid rgba(255, 204, 0, 0.3);">🧪 SANDBOX</div>
             <div class="user-pill-wrap" id="user-pill-wrap">
-                <div class="user-pill" id="user-pill-btn">
+                <div class="user-pill" id="user-pill-btn" data-auth-loading data-skeleton="profile">
                     <span class="pill-dot" style="background:#22c55e; box-shadow:0 0 10px #22c55e;"></span>
                     <span id="operator-name">---</span>
                     <i data-lucide="chevron-down" class="pill-chevron"></i>

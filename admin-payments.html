@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <link rel="stylesheet" href="ui-loading.css">
+    <script src="ui-loading.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin · Pagos | Ciphra</title>
@@ -151,6 +153,8 @@
             } catch (e) { alert('Error de conexión.'); }
         }
 
+        load = PageUI.wrap(load, '.container', 'list');
+        decide = PageUI.wrap(decide, '#list', 'list');
         if (TOKEN) load();
     </script>
 </body>

@@ -2,6 +2,8 @@
 <html lang="es">
 
 <head>
+    <link rel="stylesheet" href="ui-loading.css">
+    <script src="ui-loading.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FluxWave by Ciphra — Editor de Diagramas</title>
@@ -15,7 +17,7 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="fluxwave.css">
     <script src="auth.js"></script>
-    <script>Auth.guard();</script>
+
 </head>
 
 <body class="liquid-glass-theme">
@@ -136,7 +138,7 @@
         </div>
 
         <!-- Right Sidebar: Properties -->
-        <aside class="properties-panel" id="properties-panel">
+        <aside class="properties-panel" id="properties-panel" data-auth-loading data-skeleton="form">
             <div class="props-header">Propiedades</div>
             <div class="props-empty" id="props-empty">
                 <i data-lucide="mouse-pointer-2"></i>
@@ -162,7 +164,9 @@
         <textarea id="text-editor-input" class="text-editor-input" rows="2"></textarea>
     </div>
 
-    <script src="diagram-editor.js"></script>
+    <script>
+    (async () => { if (await Auth.guard()) await PageUI.component('.editor-layout', () => import('./diagram-editor.js')); })();
+    </script>
 </body>
 
 </html>

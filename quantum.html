@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <link rel="stylesheet" href="ui-loading.css">
+    <script src="ui-loading.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quantum | Ciphra</title>
@@ -8,28 +10,11 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=League+Spartan:wght@600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     
     <!-- KaTeX para fórmulas matemáticas -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 
     <!-- Mermaid: diagramas / mapas mentales (acento pink de Quantum) -->
-    <link rel="stylesheet" href="diagrams.css">
-    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
-    <script>
-      if (window.mermaid) mermaid.initialize({
-        startOnLoad: false, securityLevel: 'strict', theme: 'base', fontFamily: "'Inter', sans-serif",
-        themeVariables: {
-          background: '#0e0e12', primaryColor: '#16161c', primaryTextColor: '#f2f2f4',
-          primaryBorderColor: '#F472B6', lineColor: '#14B8A6',
-          secondaryColor: '#1a1a20', tertiaryColor: '#1a1a20', tertiaryTextColor: '#f2f2f4',
-          noteBkgColor: 'rgba(244,114,182,0.12)', noteTextColor: '#f2f2f4', fontSize: '15px'
-        }
-      });
-    </script>
-    <script src="diagrams.js"></script>
+
 
     <link rel="stylesheet" href="styles.css">
     <style>
@@ -260,35 +245,10 @@
 <body>
 <canvas id="q-aurora"></canvas>
 <script>
-(function(){
-    const c=document.getElementById('q-aurora');
-    if(!c)return;
-    const ctx=c.getContext('2d');
-    let W,H,blobs,raf;
-    function resize(){W=c.width=innerWidth;H=c.height=innerHeight;}
-    function init(){
-        blobs=[
-            {x:W*.7,y:H*.25,r:W*.38,dr:244,dg:114,db:182,a:0.05,t:0},
-            {x:W*.2,y:H*.65,r:W*.32,dr:249,dg:168,db:212,a:0.035,t:3},
-            {x:W*.85,y:H*.7,r:W*.28,dr:251,dg:191,db:36,a:0.03,t:1.5},
-        ];
-    }
-    function draw(){
-        ctx.clearRect(0,0,W,H);
-        blobs.forEach(b=>{
-            b.t+=0.004; b.x+=Math.sin(b.t*.9)*.5; b.y+=Math.cos(b.t*.7)*.4;
-            b.x=((b.x%W)+W)%W; b.y=((b.y%H)+H)%H;
-            const g=ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
-            g.addColorStop(0,`rgba(${b.dr},${b.dg},${b.db},${b.a})`);
-            g.addColorStop(1,'rgba(0,0,0,0)');
-            ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);
-            ctx.fillStyle=g;ctx.fill();
-        });
-        raf=requestAnimationFrame(draw);
-    }
-    resize();init();draw();
-    window.addEventListener('resize',()=>{cancelAnimationFrame(raf);resize();init();draw();});
-})();
+PageUI.visible('#q-aurora', async () => {
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches || navigator.connection?.saveData) return;
+    await import('./quantum-background.js');
+});
 </script>
     <header class="app-header">
         <div class="header-left">
@@ -302,7 +262,7 @@
         </a>
     </header>
 
-    <main id="app-container">
+    <main id="app-container" data-auth-loading data-skeleton="panel">
         <div class="dashboard-grid">
             
             <!-- Chat Interface -->
@@ -386,7 +346,9 @@
             const loadingDiv = document.createElement('div');
             loadingDiv.id = loadingId;
             loadingDiv.className = 'message ai-message';
-            loadingDiv.innerHTML = '<span class="dot-typing"><div></div><div></div><div></div></span> Analizando matriz...';
+            loadingDiv.style.position = 'relative';
+            loadingDiv.style.minHeight = '220px';
+            loadingDiv.appendChild(PageUI.skeleton('chat'));
             chatMessages.appendChild(loadingDiv);
             chatMessages.scrollTop = chatMessages.scrollHeight;
 
@@ -405,6 +367,7 @@
                 });
 
                 const data = await response.json();
+                if (!response.ok) throw new Error(data.detail || data.error || 'Error de conexión');
                 
                 // Remove loading
                 loadingDiv.remove();
@@ -429,31 +392,9 @@
             const div = document.createElement('div');
             div.className = `message ${role}-message`;
             
-            if (role === 'ai') {
-                // Parse markdown
-                let html = marked.parse(content);
-                // Parse Glossary
-                html = html.replace(/\[\[(.*?)\|(.*?)\]\]/g, (match, term, def) => {
-                    return `<span class="glossary-term">${term}<span class="tooltip-card">${def}</span></span>`;
-                });
-                div.innerHTML = html;
-            } else {
-                div.textContent = content;
-            }
-            
             chatMessages.appendChild(div);
-            
-            // Render KaTeX if AI
-            if (role === 'ai' && window.renderMathInElement) {
-                renderMathInElement(div, {
-                    delimiters: [
-                        {left: '$$', right: '$$', display: true},
-                        {left: '$', right: '$', display: false}
-                    ]
-                });
-            }
-            // Diagramas / mapas mentales (bloques ```mermaid)
-            if (role === 'ai' && window.renderDiagrams) window.renderDiagrams(div);
+            if (role === 'ai') PageUI.rich(div, content, { glossary: true });
+            else div.textContent = content;
 
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
