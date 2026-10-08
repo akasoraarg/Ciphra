@@ -40,7 +40,24 @@ Inline code: \`\(literal\)\`.
         await PageUI.rich(host, String.raw`Invalid math: \(\frac{1}\)`);
         assert(host.querySelector('.katex-error') && !host.hasAttribute('aria-busy'), 'invalid TeX stays readable and settles');
         await document.fonts.ready;
-        assert(document.fonts.check('12px KaTeX_Main'), 'local math fonts loaded');
+        const familyName = value => value.replace(/["']/g, '').trim();
+        const loadedFaces = [...document.fonts].filter(face => familyName(face.family) === 'KaTeX_Main' && face.status === 'loaded');
+        assert(loadedFaces.length > 0, 'a KaTeX_Main font face actually loaded');
+        // FontFace exposes status, but its source is only available through CSSOM.
+        const stylesheetURL = new URL('vendor/katex/katex.min.css', document.baseURI);
+        const stylesheet = [...document.styleSheets].find(sheet => sheet.href === stylesheetURL.href);
+        assert(stylesheet, 'local KaTeX stylesheet exists');
+        const fontDirectory = new URL('fonts/', stylesheetURL);
+        const localFaceLoaded = [...stylesheet.cssRules].some(rule => {
+            if (rule.type !== CSSRule.FONT_FACE_RULE || familyName(rule.style.fontFamily) !== 'KaTeX_Main') return false;
+            if (!loadedFaces.some(face => face.style === rule.style.fontStyle && face.weight === rule.style.fontWeight)) return false;
+            const sources = [...rule.style.getPropertyValue('src').matchAll(/url\(["']?([^"')]+)["']?\)/g)];
+            return sources.length > 0 && sources.every(([, source]) => {
+                const url = new URL(source, stylesheetURL);
+                return url.origin === location.origin && url.pathname.startsWith(fontDirectory.pathname);
+            });
+        });
+        assert(localFaceLoaded, 'loaded KaTeX_Main face uses vendored local font sources');
         return 'PASS: bold, lists, four math delimiters, display math, TeX commands, literal code, prices, sanitization, invalid TeX and lazy math assets';
     } finally { host.remove(); }
 })()
