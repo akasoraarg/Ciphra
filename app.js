@@ -54,8 +54,6 @@ if (rangeCount) {
 }
 
 if (uploadArea && fileInput) {
-    uploadArea.addEventListener('click', () => fileInput.click());
-
     // Drag and drop
     uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.classList.add('drag-over'); });
     uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('drag-over'));
@@ -76,9 +74,7 @@ async function handleFileUpload(file) {
     const topicInput = document.getElementById('topic-input');
     const uploadArea = document.getElementById('upload-area');
 
-    // Feedback visual
-    uploadArea.innerHTML = `<i data-lucide="loader-2" class="animate-spin"></i><p>Leyendo <strong>${file.name}</strong>...</p>`;
-    if (typeof lucide !== 'undefined') lucide.createIcons();
+    const done = PageUI.begin(uploadArea, 'form');
 
     const formData = new FormData();
     formData.append('file', file);
@@ -102,21 +98,17 @@ async function handleFileUpload(file) {
     } catch (err) {
         uploadArea.innerHTML = `<i data-lucide="alert-circle"></i><p style="color:#f87171">Error de conexión al subir el archivo.</p>`;
     }
+    uploadArea.appendChild(fileInput);
+    done();
     if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
 // Navegación de vistas
 function showView(viewName) {
-    Object.values(views).forEach(v => {
-        if (v) {
-            v.classList.remove('active');
-            setTimeout(() => v.classList.add('hidden'), 400);
-        }
-    });
-    
-    if (views[viewName]) {
-        views[viewName].classList.remove('hidden');
-        setTimeout(() => views[viewName].classList.add('active'), 10);
+    for (const [name, view] of Object.entries(views)) {
+        if (!view) continue;
+        view.classList.toggle('hidden', name !== viewName);
+        view.classList.toggle('active', name === viewName);
     }
 }
 
@@ -144,11 +136,12 @@ async function generateAITest(count, topic, difficulty) {
 
 // Iniciar Generación
 window.runGenerateAI = async function() {
-    console.log("runGenerateAI triggered!");
+    if (window.generatingTest) return;
+    window.generatingTest = true;
+    const done = PageUI.begin('#view-setup', 'quiz');
     
     const btnGen = document.getElementById('btn-generate');
     if(btnGen) {
-        btnGen.innerHTML = `<i data-lucide="loader-2" class="animate-spin"></i> Creando Test...`;
         btnGen.disabled = true;
     }
     
@@ -178,6 +171,8 @@ window.runGenerateAI = async function() {
         // Mostrar error elegante en vez de alert si se puede, sino alert
         alert("Fallo de conexión o parseo: " + err.message);
     } finally {
+        done();
+        window.generatingTest = false;
         if(btnGen) {
             btnGen.innerHTML = `<i data-lucide="zap"></i> Generar Test Mágico`;
             btnGen.disabled = false;
@@ -186,9 +181,6 @@ window.runGenerateAI = async function() {
     }
 };
 
-if (btnGenerate) {
-    btnGenerate.addEventListener('click', window.runGenerateAI);
-}
 
 // Motor de Examen
 function setupExamEngine() {
@@ -381,7 +373,6 @@ if (btnRestart) {
                     const file = e.target.files[0];
                     if (file) handleFileUpload(file);
                 });
-                uploadArea.addEventListener('click', () => newFileInput.click());
             }
         }
         

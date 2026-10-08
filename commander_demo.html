@@ -1,39 +1,16 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <link rel="stylesheet" href="ui-loading.css">
+    <script src="ui-loading.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ciphra Commander</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=League+Spartan:wght@700;800;900&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="commander.css?v=12">
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
-    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <!-- Mermaid: mapas mentales / diagramas en el chat -->
-    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
-    <script>
-      if (window.mermaid) mermaid.initialize({
-        startOnLoad: false,
-        securityLevel: 'strict',
-        theme: 'base',
-        fontFamily: "'Inter', sans-serif",
-        themeVariables: {
-          background: '#0e0e12',
-          primaryColor: '#16161c',
-          primaryTextColor: '#f2f2f4',
-          primaryBorderColor: '#FBBF24',
-          lineColor: '#14B8A6',
-          secondaryColor: '#1a1a20',
-          tertiaryColor: '#1a1a20',
-          tertiaryTextColor: '#f2f2f4',
-          noteBkgColor: 'rgba(251,191,36,0.12)',
-          noteTextColor: '#f2f2f4',
-          fontSize: '15px'
-        }
-      });
-    </script>
-    <script src="diagrams.js"></script>
+
     <script src="i18n.js"></script>
 </head>
 <body>
@@ -60,7 +37,7 @@
         <i data-lucide="plus"></i> <span data-i18n="cui.newchat">Nuevo chat</span>
     </button>
 
-    <div class="chat-list" id="chatList"></div>
+    <div class="chat-list" id="chatList" data-auth-loading data-skeleton="list"></div>
 
     <div class="sidebar-footer">
         <div class="sidebar-links">
@@ -80,7 +57,7 @@
         </div>
 
         <div class="user-pill-wrap" id="user-pill-wrap">
-            <div class="user-pill" id="user-pill-btn">
+            <div class="user-pill" id="user-pill-btn" data-auth-loading data-skeleton="profile">
                 <span class="pill-dot"></span>
                 <span id="operator-name">---</span>
                 <i data-lucide="chevron-up" class="pill-chevron"></i>
@@ -176,7 +153,7 @@
     <span id="activeChatTitle" style="display:none;">Selecciona un chat</span>
 
     <!-- Chat container -->
-    <div class="chat-container" id="chatContainer" style="position:relative;"></div>
+    <div class="chat-container" id="chatContainer" data-auth-loading data-skeleton="chat" style="position:relative;"></div>
 
     <!-- Input area (switcher + box move together) -->
     <div class="input-area">
@@ -370,7 +347,8 @@ window.getSelectedMotor = () => selectedMotor;
 lucide.createIcons();
 
 // Auth guard
-const u = Auth.getUser() || { username: 'OPERADOR_DEMO', email: 'operador@ciphra.io', plan: 'pro' };
+const u = Auth.getUser();
+if (u) {
 try {
     const name = (u.username || (u.email ? u.email.split('@')[0] : 'OPERADOR')).toUpperCase();
         document.getElementById('operator-name').innerText = name;
@@ -379,8 +357,8 @@ try {
 
         let avatarHTML = '', avatarInner = '';
         if (u.profile_pic) {
-            avatarHTML = `<img src="${u.profile_pic}" class="pill-avatar">`;
-            avatarInner = `<img src="${u.profile_pic}" class="dp-avatar-big">`;
+            avatarHTML = `<img loading="lazy" decoding="async" src="${u.profile_pic}" class="pill-avatar">`;
+            avatarInner = `<img loading="lazy" decoding="async" src="${u.profile_pic}" class="dp-avatar-big">`;
         } else {
             const initial = name.charAt(0);
             const colors = ['#8b5cf6','#ef4444','#10b981','#3b82f6','#f59e0b','#ec4899'];
@@ -438,6 +416,7 @@ lucide.createIcons();
 let countdownInterval = null, secondsLeft = 0;
 
 async function loadUsageStatus() {
+    const done = PageUI.begin('#usage-counter', 'compact');
     try {
         const token = Auth._getStorageItem('ciphra_token');
         const res = await fetch('/api/user/quota', { headers: { 'Authorization': token||'' } });
@@ -448,7 +427,7 @@ async function loadUsageStatus() {
         const limit = data ? (data.daily_limit ?? data.limit ?? 75) : 75;
         const seconds = data ? (data.reset_in ?? data.seconds_left ?? 3600) : 3600;
         if (blocked) showLimitOverlay(used, limit, seconds);
-    } catch(e) { console.error('Usage:', e); }
+    } catch(e) { console.error('Usage:', e); } finally { done(); }
 }
 
 function updateUsageUI(data) {
@@ -500,7 +479,7 @@ window.onMessageSent = function(data) {
     if (data.blocked || data.error === 'limit_reached') showLimitOverlay(data.used, data.limit, data.seconds_left);
 };
 
-if (u) loadUsageStatus();
+Auth.guard().then(valid => { if (valid) { loadUsageStatus(); loadChats(); } });
 </script>
 </body>
 </html>

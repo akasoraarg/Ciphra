@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <link rel="stylesheet" href="ui-loading.css">
+    <script src="ui-loading.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Checkout | Ciphra Pro</title>
@@ -131,7 +133,7 @@
 
         <div>
             <!-- Inicio -->
-            <div class="card" id="state-checkout">
+            <div class="card" id="state-checkout" data-auth-loading data-skeleton="panel">
                 <h2>Suscripción Pro</h2>
                 <p class="lead" id="checkout-lead">Activá tu plan Pro mensual.</p>
                 <div class="test-banner" id="test-banner">
@@ -234,6 +236,7 @@
         }
 
         async function init() {
+            if (!await Auth.guard()) return;
             const user = Auth.getUser();
             if (!user || !token) { window.location.href = 'login.html?redirect=checkout.html'; return; }
             document.getElementById('email-display').textContent = user.email;
@@ -246,7 +249,9 @@
             }
 
             try {
-                const cfg = await (await fetch('/api/payments/config')).json();
+                const configResponse = await fetch('/api/payments/config');
+                if (!configResponse.ok) throw new Error('No se pudo cargar el pago');
+                const cfg = await configResponse.json();
                 const p = '$' + Number(cfg.price_usd).toFixed(0);
                 document.getElementById('price-big').textContent = p;
                 document.getElementById('total-display').textContent = p + ' / mes';
@@ -254,16 +259,16 @@
                 if (cfg.method === 'transfer') {
                     document.getElementById('checkout-lead').textContent = 'Activá tu Pro y transferí a nuestro alias de Mercado Pago.';
                     document.getElementById('cta-label').textContent = 'Pagar';
-                    document.getElementById('cta-btn').querySelector('i').setAttribute('data-lucide', 'credit-card');
+                    document.getElementById('cta-btn').querySelector('i, svg').setAttribute('data-lucide', 'credit-card');
                     lucide.createIcons();
                 }
                 if (cfg.method === 'link') {
                     document.getElementById('checkout-lead').textContent = 'Pagá con tarjeta o dinero en cuenta de forma segura.';
                     document.getElementById('cta-label').textContent = 'Pagar';
-                    document.getElementById('cta-btn').querySelector('i').setAttribute('data-lucide', 'credit-card');
+                    document.getElementById('cta-btn').querySelector('i, svg').setAttribute('data-lucide', 'credit-card');
                     lucide.createIcons();
                 }
-            } catch (e) {}
+            } catch (e) { document.getElementById('error-text').textContent = 'No se pudo cargar el pago. Volvé a intentar.'; show('state-error'); return; }
 
             if (params.get('session')) return show('state-sandbox');
             show('state-checkout');
@@ -272,9 +277,7 @@
         async function startCheckout() {
             const btn = document.getElementById('cta-btn');
             btn.disabled = true;
-            document.getElementById('cta-label').textContent = 'Cargando…';
-            btn.querySelector('i').outerHTML = '<i data-lucide="loader-2" class="spin"></i>';
-            lucide.createIcons();
+            document.getElementById('cta-label').textContent = 'Continuar';
             try {
                 const res = await fetch('/api/payments/checkout', {
                     method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': token }
@@ -337,7 +340,7 @@
 
         async function claimTransfer() {
             const btn = document.getElementById('claim-btn');
-            btn.disabled = true; btn.innerHTML = '<i data-lucide="loader-2" class="spin"></i> Registrando…'; lucide.createIcons();
+            btn.disabled = true;
             try {
                 const res = await fetch('/api/payments/transfer/claim', {
                     method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': token }
@@ -362,7 +365,7 @@
 
         async function completeSandbox() {
             const btn = document.getElementById('sandbox-btn');
-            btn.disabled = true; btn.innerHTML = '<i data-lucide="loader-2" class="spin"></i> Procesando…'; lucide.createIcons();
+            btn.disabled = true;
             try {
                 const res = await fetch('/api/payments/sandbox/complete', {
                     method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': token },
@@ -377,6 +380,16 @@
             } catch (e) { document.getElementById('error-text').textContent = e.message; show('state-error'); }
         }
 
+        init = PageUI.wrap(init, '#state-checkout', 'panel');
+        const paymentAction = (fn, target, button) => PageUI.wrap(async () => {
+            try { return await fn(); }
+            finally { if (button) document.querySelector(button).disabled = false; }
+        }, target, 'panel');
+        startCheckout = paymentAction(startCheckout, '#state-checkout', '#cta-btn');
+        claimTransfer = paymentAction(claimTransfer, '#state-transfer', '#claim-btn');
+        completeSandbox = paymentAction(completeSandbox, '#state-sandbox', '#sandbox-btn');
+        checkStatus = paymentAction(checkStatus, '#state-claimed');
+        confirmPayment = paymentAction(confirmPayment, '#state-claimed');
         init();
     </script>
 </body>

@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <link rel="stylesheet" href="ui-loading.css">
+    <script src="ui-loading.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mindshift by Ciphra</title>
@@ -11,7 +13,6 @@
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <!-- Marked.js for Markdown -->
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link rel="stylesheet" href="styles.css">
     <script src="auth.js?v=2.1"></script>
     <script>Auth.guard();</script>
@@ -125,35 +126,10 @@
 <body>
 <canvas id="ms-aurora"></canvas>
 <script>
-(function() {
-    const c = document.getElementById('ms-aurora');
-    if (!c) return;
-    const ctx = c.getContext('2d');
-    let W, H, blobs, raf;
-    function resize() { W=c.width=innerWidth; H=c.height=innerHeight; }
-    function init() {
-        blobs = [
-            {x:W*.15,y:H*.3,r:W*.4,dr:20,dg:184,db:166,a:0.05,t:0},
-            {x:W*.8,y:H*.2,r:W*.35,dr:45,dg:212,db:191,a:0.035,t:2},
-            {x:W*.6,y:H*.75,r:W*.38,dr:251,dg:191,db:36,a:0.03,t:4},
-        ];
-    }
-    function draw() {
-        ctx.clearRect(0,0,W,H);
-        blobs.forEach(b => {
-            b.t+=0.005; b.x+=Math.sin(b.t*.8)*.5; b.y+=Math.cos(b.t*.6)*.4;
-            b.x=((b.x%W)+W)%W; b.y=((b.y%H)+H)%H;
-            const g=ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
-            g.addColorStop(0,`rgba(${b.dr},${b.dg},${b.db},${b.a})`);
-            g.addColorStop(1,'rgba(0,0,0,0)');
-            ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,Math.PI*2);
-            ctx.fillStyle=g; ctx.fill();
-        });
-        raf=requestAnimationFrame(draw);
-    }
-    resize(); init(); draw();
-    window.addEventListener('resize',()=>{cancelAnimationFrame(raf);resize();init();draw();});
-})();
+PageUI.visible('#ms-aurora', async () => {
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches || navigator.connection?.saveData) return;
+    await import('./mindshift-background.js');
+});
 </script>
     <header class="app-header">
         <div class="header-left">
@@ -167,7 +143,7 @@
 
     <main id="app-container">
         <!-- VISTA DE SETUP (Dashboard) -->
-        <section id="view-setup" class="view active">
+        <section id="view-setup" data-auth-loading data-skeleton="quiz" class="view active">
             <div class="dashboard-grid">
                 
                 <!-- Área principal de contenido -->
@@ -179,12 +155,12 @@
                         <textarea id="topic-input" placeholder="Ej: La Revolución Industrial, o pega aquí el texto de tu resumen..."></textarea>
                     </div>
 
-                    <div class="upload-area" id="upload-area">
+                    <label class="upload-area" id="upload-area" for="file-upload">
                         <i data-lucide="file-up"></i>
                         <p>Haz clic o arrastra tus archivos aquí</p>
                         <span class="upload-hint">Imágenes, PDFs, Word o Excel</span>
                         <input type="file" id="file-upload" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx" hidden>
-                    </div>
+                    </label>
                 </div>
 
                 <!-- Panel de configuración -->
@@ -274,7 +250,7 @@
                         <text x="18" y="20.5" class="percentage" id="score-text">0%</text>
                     </svg>
                 </div>
-                <p id="score-message">Calculando resultados...</p>
+                <p id="score-message">Resultados del examen</p>
             </div>
 
             <div class="results-grid">
@@ -329,6 +305,26 @@
         </div>
     </div>
 
-    <script src="app.js?v=2.1"></script>
+    <script>
+    const loadExam = () => PageUI.asset('app.js');
+    window.runGenerateAI = async () => {
+        try { await PageUI.run('#view-setup', 'quiz', loadExam); await window.runGenerateAI(); }
+        catch (_) { alert('No se pudo cargar el examen. Volvé a intentar.'); }
+    };
+    document.getElementById('view-setup').addEventListener('focusin', () => loadExam().catch(() => {}), { once: true });
+    document.getElementById('upload-area').addEventListener('dragover', event => event.preventDefault());
+    document.getElementById('upload-area').addEventListener('drop', async event => {
+        if (typeof handleFileUpload === 'function') return;
+        event.preventDefault();
+        const file = event.dataTransfer.files[0];
+        if (file) { try { await loadExam(); handleFileUpload(file); } catch (_) { alert('No se pudo cargar el archivo. Volvé a intentar.'); } }
+    });
+    // File selection can be the very first interaction on touch devices.
+    document.getElementById('file-upload').addEventListener('change', async event => {
+        if (typeof handleFileUpload === 'function') return;
+        const file = event.target.files[0];
+        if (file) { try { await loadExam(); handleFileUpload(file); } catch (_) { alert('No se pudo cargar el archivo. Volvé a intentar.'); } }
+    });
+    </script>
 </body>
 </html>

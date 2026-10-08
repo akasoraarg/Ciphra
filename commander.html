@@ -2,6 +2,8 @@
 <html lang="es">
 
 <head>
+    <link rel="stylesheet" href="ui-loading.css">
+    <script src="ui-loading.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ciphra Commander</title>
@@ -10,33 +12,8 @@
         rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="commander.css?v=12">
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
-    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <!-- Mermaid: mapas mentales / diagramas en el chat -->
-    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
-    <script>
-        if (window.mermaid) mermaid.initialize({
-            startOnLoad: false,
-            securityLevel: 'strict',
-            theme: 'base',
-            fontFamily: "'Inter', sans-serif",
-            themeVariables: {
-                background: '#0e0e12',
-                primaryColor: '#16161c',
-                primaryTextColor: '#f2f2f4',
-                primaryBorderColor: '#FBBF24',
-                lineColor: '#14B8A6',
-                secondaryColor: '#1a1a20',
-                tertiaryColor: '#1a1a20',
-                tertiaryTextColor: '#f2f2f4',
-                noteBkgColor: 'rgba(251,191,36,0.12)',
-                noteTextColor: '#f2f2f4',
-                fontSize: '15px'
-            }
-        });
-    </script>
-    <script src="diagrams.js"></script>
+
     <script src="i18n.js"></script>
 </head>
 
@@ -59,7 +36,7 @@
             <i data-lucide="plus"></i> <span data-i18n="cui.newchat">Nuevo chat</span>
         </button>
 
-        <div class="chat-list" id="chatList"></div>
+        <div class="chat-list" id="chatList" data-auth-loading data-skeleton="list"></div>
 
         <div class="sidebar-footer">
             <div class="sidebar-links">
@@ -79,7 +56,7 @@
             </div>
 
             <div class="user-pill-wrap" id="user-pill-wrap">
-                <div class="user-pill" id="user-pill-btn">
+                <div class="user-pill" id="user-pill-btn" data-auth-loading data-skeleton="profile">
                     <span class="pill-dot"></span>
                     <span id="operator-name">---</span>
                     <i data-lucide="chevron-up" class="pill-chevron"></i>
@@ -145,7 +122,7 @@
                 </div>
 
                 <!-- Chat container -->
-                <div class="chat-container" id="chatContainer" style="position:relative;"></div>
+                <div class="chat-container" id="chatContainer" data-auth-loading data-skeleton="chat" style="position:relative;"></div>
 
                 <!-- Input area (switcher + box move together) -->
                 <div class="input-area">
@@ -367,28 +344,26 @@
     </script>
 
     <!-- ════════════════════════════════════
-     AUTH BYPASS + INIT (MODO DESARROLLO)
+     AUTH + INIT
 ════════════════════════════════════ -->
     <script src="auth.js"></script>
-    <script src="commander.js"></script>
+
     <script>
         lucide.createIcons();
 
-        // Usuario simulado para desarrollo / modo offline
-        const u = (typeof Auth !== 'undefined' && Auth.getUser) ? Auth.getUser() : {
-            username: 'OPERADOR_DEMO',
-            email: 'operador@ciphra.io',
-            plan: 'pro'
-        };
+        (async () => {
+        if (!await Auth.guard()) return;
+        if (!await PageUI.component('#chatContainer', () => PageUI.asset('commander.js'))) return;
+        const u = Auth.getUser();
 
         // Carga directa de la interfaz de usuario
         try {
-            const name = u.username.toUpperCase();
+            const name = (u.username || u.email).toUpperCase();
             document.getElementById('operator-name').innerText = name;
             document.getElementById('dp-user-name').innerText = name;
             document.getElementById('dp-user-email').innerText = u.email;
 
-            const initial = name.charAt(0);
+            const initial = escapeHtml(name.charAt(0));
             const bgColor = '#8b5cf6';
             const avatarHTML = `<div class="pill-avatar default-avatar" style="background:${bgColor};width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700;">${initial}</div>`;
             const avatarInner = `<div class="dp-avatar-big default-avatar" style="background:${bgColor};font-size:1.8rem;width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;">${initial}</div>`;
@@ -398,7 +373,7 @@
             if (pillDot) pillDot.outerHTML = avatarHTML;
             document.getElementById('dp-avatar-box').innerHTML = avatarBigHTML;
         } catch (e) {
-            console.error('Error al inicializar sesión ficticia:', e);
+            console.error('Error al inicializar sesión:', e);
         }
 
         // Control del menú desplegable del usuario
@@ -411,24 +386,27 @@
         });
 
         // Configuración del Plan
-        document.getElementById('pro-badge').style.display = 'inline-block';
-        window._isPro = true;
-        window._userPlan = 'pro';
+        window._userPlan = u.plan || 'free';
+        window._isPro = ['pro', 'aether'].includes(window._userPlan);
+        document.getElementById('pro-badge').style.display = window._isPro ? 'inline-block' : 'none';
+        document.getElementById('logout-btn').addEventListener('click', () => Auth.logout());
 
         // Inicializar el selector de motores
         initMotorSelector();
         lucide.createIcons();
 
-        // Simulación del contador de uso (Sin bloqueo)
+        // Mostrar el plan confirmado por el servidor.
         const fill = document.getElementById('usage-bar-fill');
         const text = document.getElementById('usage-text');
         const counter = document.getElementById('usage-counter');
-        if (counter && fill && text) {
+        if (window._isPro && counter && fill && text) {
             fill.style.width = '100%';
             text.innerText = 'PRO (ILIMITADO)';
             counter.classList.add('pro');
             fill.classList.add('pro');
         }
+        await loadChats();
+        })();
     </script>
 </body>
 

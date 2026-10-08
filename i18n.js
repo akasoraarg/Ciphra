@@ -122,6 +122,7 @@
     },
 
     async init() {
+      const done = window.PageUI?.beginAll('[data-lang-switcher]') || (() => {});
       this.region = this._detectRegionLocal();
       let def = this.region === "int" ? "en" : "es";
       try {
@@ -136,6 +137,7 @@
       this.lang = saved && this.langs.includes(saved) ? saved : def;
       this.apply();
       this.mountSwitchers();
+      done();
     },
 
     t(key) {

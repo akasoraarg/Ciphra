@@ -3,6 +3,7 @@ from fastapi.responses import JSONResponse, HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 import security
+import auth_api
 from security import (
     check_global, check_auth, safe_json, sanitize_str, validate_email,
     clamp_int, hash_password, verify_password, generate_token,
@@ -32,6 +33,7 @@ from datetime import datetime
  
 
 load_dotenv()
+AUTH_PROVIDER = auth_api.provider()
 api_key = os.getenv("GEMINI_API_KEY")
 
 # --- INICIALIZACIÓN DE MOTORES (TIERED AI) ---
@@ -291,11 +293,12 @@ AUTH_STRICT_PATHS = {
 # sanitización con DOMPurify (defensa en profundidad).
 CSP_POLICY = (
     "default-src 'self'; "
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; "
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://accounts.google.com/gsi/client; "
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://accounts.google.com/gsi/style; "
     "font-src 'self' data: https://fonts.gstatic.com; "
     "img-src 'self' data: blob: https:; "
-    "connect-src 'self'; "
+    "connect-src 'self' https://accounts.google.com/gsi/; "
+    "frame-src https://accounts.google.com/gsi/; "
     "object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
 )
 
@@ -305,7 +308,7 @@ async def invisible_mirror_middleware(request: Request, call_next):
     path = request.url.path
 
     # --- Rate limiting ---
-    if path in AUTH_STRICT_PATHS:
+    if request.method == "POST" and path in AUTH_STRICT_PATHS:
         ok, retry = check_auth(client_ip)
         if not ok:
             return JSONResponse(
@@ -414,20 +417,6 @@ async def download_count():
 
 # --- API CHATS ---
 
-def get_user_from_token_simple(request: Request) -> str:
-    token = request.headers.get("Authorization", "")
-    if not token:
-        return None
-    if token.startswith("token_"):
-        return token  
-    SESSIONS_FILE_LOCAL = 'sessions.json'
-    if os.path.exists(SESSIONS_FILE_LOCAL):
-        sessions = load_users_raw(SESSIONS_FILE_LOCAL)
-        entry = sessions.get(token)
-        if entry:
-            return entry.get("email") or entry if isinstance(entry, str) else token
-    return token
-
 @app.get("/api/chats")
 async def list_chats(request: Request):
     user = get_user_from_token(request)
@@ -445,7 +434,9 @@ async def list_chats(request: Request):
 @app.post("/api/chats/create")
 async def create_chat(request: Request):
     user = get_user_from_token(request)
-    owner = user.get("email") if user else request.headers.get("Authorization", "anonymous")
+    if not user:
+        raise HTTPException(401, "No autorizado")
+    owner = user["email"]
     chats = load_chats()
     chat_id = str(uuid.uuid4())
     chats[chat_id] = {
@@ -459,12 +450,11 @@ async def create_chat(request: Request):
 
 # --- Control de acceso a chats (evita IDOR) ---
 def get_owner_id(request: Request) -> str:
-    """Identidad del solicitante: email si está logueado, si no su token crudo."""
+    """Solo una sesión verificada puede ser dueña de un chat."""
     user = get_user_from_token(request)
     if user:
         return user.get("email")
-    tok = request.headers.get("Authorization")
-    return tok if tok else "anonymous"
+    raise HTTPException(401, "No autorizado")
 
 def can_access_chat(request: Request, chat: dict) -> bool:
     owner_id = get_owner_id(request)
@@ -1201,7 +1191,7 @@ def create_session(email: str) -> str:
     """Genera un token de sesión aleatorio y lo persiste mapeado al email."""
     sessions = load_users_raw(SESSIONS_FILE)
     token = generate_token()
-    sessions[token] = {"email": email, "created_at": datetime.now().isoformat()}
+    sessions[token] = {"email": email, "created_at": datetime.now().isoformat(), "provider": AUTH_PROVIDER}
     save_sessions(sessions)
     return token
 
@@ -1217,7 +1207,7 @@ def get_user_from_token(request_or_token) -> dict:
     # Resolver el token contra el store de sesiones (no se infiere del email).
     sessions = load_users_raw(SESSIONS_FILE)
     entry = sessions.get(token)
-    if not entry:
+    if not entry or not isinstance(entry, dict) or entry.get("provider", "local") != AUTH_PROVIDER:
         return None
     # Expiración de sesión (TTL): descartar tokens vencidos o sin metadata.
     if _session_expired(entry):
@@ -1243,6 +1233,47 @@ def get_user_from_token(request_or_token) -> dict:
     user_data.setdefault("daily_reset_date", datetime.now().date().isoformat())
     return user_data
 
+def supabase_session(result):
+    # Confirmation-required signup must not create an application session/profile.
+    if not result.get("access_token"):
+        return {"success": True, "requires_confirmation": True,
+                "message": "Revisá tu email para confirmar la cuenta y luego iniciá sesión."}
+    identity = result.get("user") or {}
+    if not identity.get("id") or not identity.get("email_confirmed_at"):
+        raise HTTPException(401, "Confirmá tu email antes de iniciar sesión.")
+    try:
+        email = validate_email(identity.get("email"))
+    except ValidationError:
+        raise HTTPException(502, "Identidad de autenticación inválida.") from None
+    users = load_users()
+    user = users.get(email)
+    if user and user.get("supabase_id") not in (None, identity["id"]):
+        raise HTTPException(409, "La identidad de la cuenta cambió. Contactá soporte.")
+    if not user:
+        metadata = identity.get("user_metadata") or {}
+        # Metadata is editable by the user: never take plan/roles from it.
+        def profile_text(value, fallback):
+            return sanitize_str(value[:64], max_len=64) if isinstance(value, str) and value else fallback
+        username = profile_text(metadata.get("username") or metadata.get("name"), email.split("@")[0][:64])
+        picture = metadata.get("profile_pic", "")
+        if not isinstance(picture, str) or len(picture) > 3_000_000 or not _re.fullmatch(r"data:image/(?:jpeg|png|webp);base64,[A-Za-z0-9+/=]+", picture):
+            picture = ""
+        user = {"email": email, "username": username,
+                "nickname": profile_text(metadata.get("nickname"), username),
+                "profile_pic": picture,
+                "plan": "free", "created_at": datetime.now().isoformat()}
+    user["supabase_id"] = identity["id"]
+    user.pop("password", None)
+    users[email] = user
+    save_users(users)
+    return {"success": True, "token": create_session(email), "user": user}
+
+
+@app.get("/api/auth/config")
+async def auth_config():
+    return {"provider": AUTH_PROVIDER, "google_client_id": os.getenv("GOOGLE_CLIENT_ID", "")}
+
+
 @app.post("/api/auth/login")
 async def auth_login(request: Request):
     data = await safe_json(request)
@@ -1253,6 +1284,12 @@ async def auth_login(request: Request):
     password = data.get("password", "")
     if not isinstance(password, str) or not password:
         return JSONResponse({"success": False, "message": "Contraseña requerida"}, status_code=400)
+
+    if AUTH_PROVIDER == "supabase":
+        result = await auth_api.authenticate("password", {"email": email, "password": password})
+        if not result.get("access_token"):
+            raise HTTPException(401, "Credenciales inválidas")
+        return supabase_session(result)
 
     users = load_users()
     user = users.get(email)
@@ -1287,6 +1324,13 @@ async def auth_register(request: Request):
     if is_weak_password(password):
         return JSONResponse({"success": False, "message": "Contraseña demasiado común o débil. Elegí una más segura."}, status_code=400)
 
+    if AUTH_PROVIDER == "supabase":
+        result = await auth_api.authenticate("signup", {
+            "email": email, "password": password,
+            "data": {"username": username, "nickname": nickname, "profile_pic": profile_pic},
+        })
+        return supabase_session(result)
+
     users = load_users()
     if email in users:
         return JSONResponse({"success": False, "message": "Usuario ya registrado"}, status_code=400)
@@ -1318,26 +1362,25 @@ async def auth_google(request: Request):
     google_client_id = os.getenv("GOOGLE_CLIENT_ID")
     credential = data.get("credential") or data.get("id_token")
 
-    if google_client_id:
-        # Modo seguro: exigir y verificar el ID token de Google.
-        if not credential:
-            return JSONResponse({"success": False, "message": "Falta el token de Google"}, status_code=400)
-        try:
-            from google.oauth2 import id_token as g_id_token
-            from google.auth.transport import requests as g_requests
-            info = g_id_token.verify_oauth2_token(credential, g_requests.Request(), google_client_id)
-            email = validate_email(info.get("email", ""))
-            name = sanitize_str(info.get("name", "Operador"), max_len=64, field="name")
-        except Exception:
-            return JSONResponse({"success": False, "message": "Token de Google inválido"}, status_code=401)
-    else:
-        # Modo legado/dev (sin GOOGLE_CLIENT_ID): confía en el email del cliente.
-        # FLAGGED en SECURITY_AUDIT.md — configurar GOOGLE_CLIENT_ID en producción.
-        try:
-            email = validate_email(data.get("email", ""))
-            name = sanitize_str(data.get("name", "Operador"), max_len=64, field="name")
-        except ValidationError as e:
-            return JSONResponse({"success": False, "message": str(e)}, status_code=400)
+    if not google_client_id:
+        raise HTTPException(503, "El acceso con Google no está configurado.")
+    if not isinstance(credential, str) or not credential:
+        raise HTTPException(400, "Falta el token de Google")
+    if AUTH_PROVIDER == "supabase":
+        result = await auth_api.authenticate("id_token", {"provider": "google", "id_token": credential})
+        if not result.get("access_token"):
+            raise HTTPException(401, "Token de Google inválido")
+        return supabase_session(result)
+    try:
+        from google.oauth2 import id_token as g_id_token
+        from google.auth.transport import requests as g_requests
+        info = g_id_token.verify_oauth2_token(credential, g_requests.Request(), google_client_id)
+        if not info.get("email_verified"):
+            raise ValueError("Email sin verificar")
+        email = validate_email(info.get("email", ""))
+        name = sanitize_str(info.get("name", "Operador"), max_len=64, field="name")
+    except Exception:
+        raise HTTPException(401, "Token de Google inválido") from None
 
     users = load_users()
     if email not in users:
@@ -1399,6 +1442,8 @@ async def auth_redeem(request: Request):
 
 @app.post("/api/user/save-profile")
 async def save_profile(request: Request):
+    if not get_user_from_token(request):
+        raise HTTPException(401, "No autorizado")
     return {"success": True, "message": "Perfil guardado correctamente"}
 
 @app.get("/api/user/quota")
@@ -1444,6 +1489,8 @@ async def auth_logout(request: Request):
 
 @app.post("/api/quantum/solve")
 async def quantum_solve(request: Request):
+    if not get_user_from_token(request):
+        raise HTTPException(401, "No autorizado")
     auth_token = request.headers.get("Authorization")
     user = get_user_from_token(auth_token)
     # Quantum (matemática paso a paso). El modelo lo decide engine_model() según FORCE_FLASH.
@@ -1509,6 +1556,8 @@ async def quantum_solve(request: Request):
 
 @app.post("/api/mindshift/upload")
 async def mindshift_upload(request: Request):
+    if not get_user_from_token(request):
+        raise HTTPException(401, "No autorizado")
     import io
     from fastapi import UploadFile
     form = await request.form()
@@ -1573,6 +1622,8 @@ async def mindshift_upload(request: Request):
 
 @app.post("/api/mindshift/generate")
 async def mindshift_generate(request: Request):
+    if not get_user_from_token(request):
+        raise HTTPException(401, "No autorizado")
     auth_token = request.headers.get("Authorization")
     user = get_user_from_token(auth_token)
     # MindShift (genera el test). El modelo lo decide engine_model() según FORCE_FLASH.

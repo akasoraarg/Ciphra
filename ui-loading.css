@@ -1,0 +1,30 @@
+/* Shared, layout-sized async states. No full-page paint blocker. */
+.ui-pending { pointer-events: none; }
+.ui-pending > :not(.ui-skeleton) { visibility: hidden !important; }
+.ui-skeleton { position: absolute; inset: 0; z-index: 5; display: flex; flex-direction: column; gap: 14px; padding: 20px; overflow: hidden; border-radius: inherit; background: var(--surface, #101014); color: transparent; }
+.ui-skeleton-row { display: flex; align-items: center; gap: 12px; width: 100%; }
+.ui-skeleton-stack { display: flex; flex: 1; flex-direction: column; gap: 10px; }
+.ui-skeleton-block { display: block; flex: none; width: 100%; height: 12px; border-radius: 7px; background: linear-gradient(100deg, #ffffff08 20%, #ffffff14 45%, #ffffff08 70%); background-size: 240% 100%; animation: ui-shimmer 1.7s ease-in-out infinite; }
+.ui-skeleton-block.short { width: 58%; }
+.ui-skeleton-block.title { width: 38%; height: 22px; }
+.ui-skeleton-block.avatar { width: 38px; height: 38px; border-radius: 50%; }
+.ui-skeleton-block.field { height: 46px; border-radius: 12px; }
+.ui-skeleton-block.card { height: 100px; border-radius: 14px; }
+.ui-skeleton-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.ui-skeleton--compact, .ui-skeleton--profile { padding: 6px; gap: 8px; justify-content: center; }
+.ui-skeleton--compact .ui-skeleton-block { height: 12px; }
+.ui-skeleton--chat { gap: 24px; }
+.ui-skeleton--chat .ui-skeleton-row:nth-child(even) { width: 80%; align-self: flex-end; }
+.ui-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+.ui-load-error { padding: 16px; border: 1px solid #ffffff20; border-radius: 12px; color: #ddd; font: inherit; }
+.ui-load-error button, .ui-history-more { display: block; margin: 12px auto; padding: 9px 16px; border: 1px solid #ffffff30; border-radius: 20px; background: #ffffff08; color: inherit; cursor: pointer; font: inherit; }
+.ui-history-sentinel { height: 1px; }
+@keyframes ui-shimmer { from { background-position: 130% 0; } to { background-position: -130% 0; } }
+@media (prefers-reduced-motion: reduce) { .ui-skeleton-block { animation: none; } }
+@media (max-width: 600px) { .ui-skeleton-grid { grid-template-columns: 1fr; } .ui-skeleton { padding: 12px; } .ui-skeleton--compact, .ui-skeleton--profile { padding: 4px; } }
+
+.ui-skeleton--quiz { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; }
+.ui-skeleton--quiz .card { height: 180px; }
+@media (max-width: 768px) { .ui-skeleton--quiz { grid-template-columns: 1fr; } .ui-skeleton--quiz .card { height: 110px; } }
+
+.upload-area[for] { display: block; }

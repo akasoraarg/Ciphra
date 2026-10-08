@@ -376,8 +376,8 @@ function updateProps() {
     if (!n) { propEmpty.style.display = ''; propContent.classList.add('hidden'); return; }
     propEmpty.style.display = 'none'; propContent.classList.remove('hidden');
     propText.value = n.label;
-    propW.value = Math.round(n.w);
-    propH.value = Math.round(n.h);
+    if (propW) propW.value = Math.round(n.w);
+    if (propH) propH.value = Math.round(n.h);
     document.querySelectorAll('.color-swatch').forEach(s => {
         s.classList.toggle('active', s.style.background === n.fill || s.style.backgroundColor === n.fill);
     });
@@ -389,11 +389,11 @@ propText.addEventListener('input', () => {
 });
 propText.addEventListener('change', saveHistory);
 
-propW.addEventListener('change', () => {
+propW?.addEventListener('change', () => {
     const n = state.nodes.find(n => n.id === state.selected);
     if (n) { n.w = parseInt(propW.value); saveHistory(); render(); }
 });
-propH.addEventListener('change', () => {
+propH?.addEventListener('change', () => {
     const n = state.nodes.find(n => n.id === state.selected);
     if (n) { n.h = parseInt(propH.value); saveHistory(); render(); }
 });
@@ -536,7 +536,7 @@ document.querySelectorAll('.shape-btn').forEach(btn => {
         document.querySelectorAll('.shape-btn').forEach(b => b.classList.remove('placing'));
         btn.classList.add('placing');
         svg.style.cursor = 'crosshair';
-        hint.classList.add('hidden');
+        hint?.classList.add('hidden');
         setTool('select');
     });
 });
@@ -583,7 +583,7 @@ function exportPNG() {
 }
 
 // ── Hint ──────────────────────────────────────────────────────────────────
-function hideHint() { hint.classList.add('hidden'); }
+function hideHint() { hint?.classList.add('hidden'); }
 
 // ── Init ──────────────────────────────────────────────────────────────────
 saveHistory();

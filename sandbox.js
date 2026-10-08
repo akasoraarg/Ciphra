@@ -4,7 +4,7 @@ let activeFriendEmail = null;
 let friendsPollInterval = null;
 
 // Requerir autenticación al cargar
-Auth.requireAuth();
+
 
 // Helper: obtiene el token del storage
 function getToken() {
@@ -31,7 +31,7 @@ function initUI() {
 
     const avatarBox = document.getElementById('dp-avatar-box');
     if (user.profile_pic) {
-        avatarBox.innerHTML = `<img src="${user.profile_pic}" style="width: 100%; height: 100%; object-fit: cover;">`;
+        avatarBox.innerHTML = `<img loading="lazy" decoding="async" src="${user.profile_pic}" style="width: 100%; height: 100%; object-fit: cover;">`;
     } else {
         avatarBox.innerHTML = `<i data-lucide="user" style="width: 24px; color: var(--ciphra-yellow);"></i>`;
     }
@@ -68,8 +68,7 @@ function initUI() {
 
 // Cargar listas
 async function loadSandboxData() {
-    await loadFriendsList();
-    await loadFriendsChats();
+    await Promise.all([loadFriendsList(), loadFriendsChats()]);
 }
 
 async function loadFriendsList() {
@@ -109,7 +108,7 @@ async function loadFriendsList() {
                 
                 let avHtml = '';
                 if (f.profile_pic) {
-                    avHtml = `<img src="${f.profile_pic}" style="width: 20px; height: 20px; border-radius: 50%; object-fit: cover;">`;
+                    avHtml = `<img loading="lazy" decoding="async" src="${f.profile_pic}" style="width: 20px; height: 20px; border-radius: 50%; object-fit: cover;">`;
                 } else {
                     avHtml = `<i data-lucide="user" style="width: 14px;"></i>`;
                 }
@@ -128,7 +127,7 @@ async function loadFriendsList() {
         }
         lucide.createIcons();
     } catch (e) {
-        console.error("Error al cargar amigos:", e);
+        PageUI.error('#friendsList', () => loadFriendsList(), "No se pudo cargar la lista de amigos.");
     }
 }
 
@@ -147,7 +146,7 @@ async function loadFriendsChats() {
                 
                 let avHtml = '';
                 if (c.other_profile_pic) {
-                    avHtml = `<img src="${c.other_profile_pic}" style="width: 20px; height: 20px; border-radius: 50%; object-fit: cover;">`;
+                    avHtml = `<img loading="lazy" decoding="async" src="${c.other_profile_pic}" style="width: 20px; height: 20px; border-radius: 50%; object-fit: cover;">`;
                 } else {
                     avHtml = `<i data-lucide="message-circle" style="width: 14px;"></i>`;
                 }
@@ -166,7 +165,7 @@ async function loadFriendsChats() {
         }
         lucide.createIcons();
     } catch (e) {
-        console.error("Error al cargar chats directos:", e);
+        PageUI.error('#directChatsList', () => loadFriendsChats(), "No se pudieron cargar los canales.");
     }
 }
 
@@ -254,15 +253,18 @@ async function openFriendChat(chatId, otherEmail) {
     });
     
     await refreshDirectChatMessages();
-    friendsPollInterval = setInterval(refreshDirectChatMessages, 3000);
+    friendsPollInterval = setInterval(() => { if (!document.hidden) refreshDirectChatMessages(); }, 3000);
 }
 
 async function refreshDirectChatMessages() {
     if (!currentChatId) return;
     
+    const requestedChat = currentChatId;
     try {
-        const res = await fetch(`/api/friends/chats/${currentChatId}`, { headers: authHeaders() });
+        const res = await fetch(`/api/friends/chats/${requestedChat}`, { headers: authHeaders() });
         const chat = await res.json();
+        if (requestedChat !== currentChatId) return;
+        if (!res.ok) throw new Error('No se pudo cargar el canal');
         
         document.getElementById('activeChatTitle').innerHTML = `
             <div style="display: flex; align-items: center; gap: 8px;">
@@ -332,6 +334,7 @@ function appendDirectMessage(role, senderName, content, imageData = null, imageM
     
     if (imageData) {
         const img = document.createElement('img');
+        img.loading = 'lazy'; img.decoding = 'async';
         const src = imageData.startsWith('data:') ? imageData : `data:${imageMime};base64,${imageData}`;
         img.src = src;
         img.style.cssText = "max-width: 250px; max-height: 250px; border-radius: 8px; margin-top: 8px; display: block; border: 1px solid var(--glass-border);";
@@ -403,7 +406,7 @@ function renderThumbStrip() {
         thumb.className = 'thumb-container';
         thumb.style.position = 'relative';
         thumb.innerHTML = `
-            <img src="${img.data}" style="width:40px; height:40px; border-radius:6px; object-fit:cover; border:1px solid var(--ciphra-yellow);">
+            <img loading="lazy" decoding="async" src="${img.data}" style="width:40px; height:40px; border-radius:6px; object-fit:cover; border:1px solid var(--ciphra-yellow);">
             <div onclick="removeImage(${idx})" style="position:absolute; top:-6px; right:-6px; background:#ef4444; border-radius:50%; width:14px; height:14px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:9px; color:#fff; font-weight:700;">×</div>
         `;
         strip.appendChild(thumb);
@@ -453,9 +456,15 @@ async function redeemCode() {
 }
 
 // Inicialización general
-window.onload = async () => {
+loadFriendsList = PageUI.wrap(loadFriendsList, '#friendsList', 'list', { once: true });
+loadFriendsChats = PageUI.wrap(loadFriendsChats, '#directChatsList', 'list', { once: true });
+openFriendChat = PageUI.wrap(openFriendChat, '#chatContainer', 'chat');
+
+async function initSandbox() {
+    if (!await Auth.guard()) return;
     initUI();
     await loadSandboxData();
     // Auto-recarga de amigos y solicitudes recibidas cada 8 segundos
-    setInterval(loadSandboxData, 8000);
-};
+    setInterval(() => { if (!document.hidden) loadSandboxData(); }, 8000);
+}
+initSandbox();

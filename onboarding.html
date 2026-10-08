@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <link rel="stylesheet" href="ui-loading.css">
+    <script src="ui-loading.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Configurar COMMANDER | Ciphra</title>
@@ -135,7 +137,7 @@
             <h2>Personaliza tu experiencia</h2>
             <p class="subtitle">COMMANDER se adaptará a tu estilo de aprendizaje.</p>
 
-            <form id="onboarding-form">
+            <form id="onboarding-form" data-auth-loading data-skeleton="form">
                 <div class="form-group" style="margin-bottom: 2rem;">
                     <label>¿Cómo quieres que te llame COMMANDER?</label>
                     <input type="text" id="nickname" placeholder="Ej: Capitán, Estudiante, Colega..." style="width: 100%; margin-top: 0.5rem;" required>
@@ -214,6 +216,7 @@
             preview.innerText = `"${msg}"`;
         };
 
+        Auth.guard();
         form.addEventListener('input', updatePreview);
 
         form.addEventListener('submit', async (e) => {
@@ -226,6 +229,8 @@
                 detail: document.getElementById('detail').value
             };
 
+            if (!await Auth.guard()) return;
+            const done = PageUI.begin('#onboarding-form', 'form');
             const user = Auth.getUser();
             const token = localStorage.getItem('ciphra_token');
 
@@ -247,7 +252,7 @@
                 }
             } catch (err) {
                 alert("Error al guardar el perfil");
-            }
+            } finally { done(); }
         });
     </script>
 </body>

@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <link rel="stylesheet" href="ui-loading.css">
+    <script src="ui-loading.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Política de Privacidad | Ciphra</title>
@@ -59,15 +61,19 @@
     </div>
 
     <script src="i18n.js"></script>
-    <script src="legal.js"></script>
+
     <script src="cookies.js"></script>
     <script>
-        function renderLegal() {
+        async function renderLegal() {
+            const done = PageUI.begin('#doc', 'panel');
+            try {
+            await PageUI.asset('legal.js');
             const lang = (window.I18N && I18N.lang) || 'es';
             const data = (window.LEGAL && LEGAL.privacidad[lang]) || LEGAL.privacidad.es;
             document.getElementById('doc').innerHTML = data.map(s =>
                 `<section class="sec"><h2>${s.h}</h2>${s.p}</section>`).join('');
             if (window.lucide) lucide.createIcons();
+            } catch (_) { PageUI.error('#doc', renderLegal); } finally { done(); }
         }
         renderLegal();
         window.addEventListener('i18n:change', renderLegal);
