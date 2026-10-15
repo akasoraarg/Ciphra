@@ -26,9 +26,9 @@ export async function render(el, text = '', { glossary = false } = {}) {
     if (el.querySelector('code.language-mermaid')) {
         try {
             if (!diagrams) diagrams = (async () => {
-                await Promise.all([PageUI.asset('https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js'), PageUI.asset('diagrams.css', true)]);
+                await Promise.all([PageUI.asset('https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js'), PageUI.asset('css/diagrams.css', true)]);
                 mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', theme: 'dark' });
-                await PageUI.asset('diagrams.js');
+                await PageUI.asset('js/diagrams.js');
             })().catch(error => { diagrams = null; throw error; });
             await diagrams;
             await window.renderDiagrams(el);

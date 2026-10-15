@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <link rel="stylesheet" href="ui-loading.css">
-    <script src="ui-loading.js"></script>
+    <link rel="stylesheet" href="css/ui-loading.css">
+    <script src="js/ui-loading.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mindshift by Ciphra</title>
@@ -13,8 +13,8 @@
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <!-- Marked.js for Markdown -->
-    <link rel="stylesheet" href="styles.css">
-    <script src="auth.js?v=2.1"></script>
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="js/auth.js?v=2.1"></script>
     <script>Auth.guard();</script>
     <style>
     /* ── MÓDULO MINDSHIFT = acento TEAL (paleta de la landing) ── */
@@ -128,7 +128,7 @@
 <script>
 PageUI.visible('#ms-aurora', async () => {
     if (matchMedia('(prefers-reduced-motion: reduce)').matches || navigator.connection?.saveData) return;
-    await import('./mindshift-background.js');
+    await import('./js/mindshift-background.js');
 });
 </script>
     <header class="app-header">
@@ -306,7 +306,7 @@ PageUI.visible('#ms-aurora', async () => {
     </div>
 
     <script>
-    const loadExam = () => PageUI.asset('app.js');
+    const loadExam = () => PageUI.asset('js/app.js');
     window.runGenerateAI = async () => {
         try { await PageUI.run('#view-setup', 'quiz', loadExam); await window.runGenerateAI(); }
         catch (_) { alert('No se pudo cargar el examen. Volvé a intentar.'); }

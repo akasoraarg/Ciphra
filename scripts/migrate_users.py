@@ -1,3 +1,6 @@
+import os, sys
+# Permite importar los módulos de backend/ al correr: python scripts/<script>.py (desde la raíz)
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "backend"))
 import os
 import json
 import base64

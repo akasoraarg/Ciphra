@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <link rel="stylesheet" href="ui-loading.css">
-    <script src="ui-loading.js"></script>
+    <link rel="stylesheet" href="css/ui-loading.css">
+    <script src="js/ui-loading.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Política de Privacidad | Ciphra</title>
-    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="icon" type="image/png" href="assets/favicon.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=League+Spartan:wght@700;800;900&display=swap" rel="stylesheet">
@@ -60,14 +60,14 @@
         <div class="doc" id="doc"></div>
     </div>
 
-    <script src="i18n.js"></script>
+    <script src="js/i18n.js"></script>
 
-    <script src="cookies.js"></script>
+    <script src="js/cookies.js"></script>
     <script>
         async function renderLegal() {
             const done = PageUI.begin('#doc', 'panel');
             try {
-            await PageUI.asset('legal.js');
+            await PageUI.asset('js/legal.js');
             const lang = (window.I18N && I18N.lang) || 'es';
             const data = (window.LEGAL && LEGAL.privacidad[lang]) || LEGAL.privacidad.es;
             document.getElementById('doc').innerHTML = data.map(s =>

@@ -8,7 +8,8 @@ import os
 from dotenv import load_dotenv
 
 # Cargar .env desde la carpeta del proyecto
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# desktop/ vive un nivel abajo de la raíz del proyecto (donde están .env, venv y backend/).
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 load_dotenv(os.path.join(BASE_DIR, ".env"))
 
 def start_server():
@@ -28,9 +29,10 @@ def start_server():
     subprocess.Popen([
         os.path.join(BASE_DIR, "venv/bin/uvicorn"),
         "main:app",
+        "--app-dir", os.path.join(BASE_DIR, "backend"),
         "--host", "127.0.0.1",
         "--port", "8000"
-    ], env=env)
+    ], env=env, cwd=BASE_DIR)
 
 def wait_for_server(url, timeout=15):
     """Espera hasta que el servidor responda, con timeout."""

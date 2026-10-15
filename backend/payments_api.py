@@ -120,7 +120,7 @@ def _sandbox_checkout(email: str):
     return {"checkout_url": f"{BASE_URL}/checkout.html?session={token}", "sandbox": True}
 
 # Cola de pagos pendientes (persistida y CIFRADA, igual que users/chats).
-PENDING_FILE = "payments_pending.json"
+PENDING_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "payments_pending.json")
 
 
 def _load_pending() -> dict:

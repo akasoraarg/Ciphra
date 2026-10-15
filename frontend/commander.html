@@ -2,8 +2,8 @@
 <html lang="es">
 
 <head>
-    <link rel="stylesheet" href="ui-loading.css">
-    <script src="ui-loading.js"></script>
+    <link rel="stylesheet" href="css/ui-loading.css">
+    <script src="js/ui-loading.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ciphra Commander</title>
@@ -11,10 +11,10 @@
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=League+Spartan:wght@700;800;900&display=swap"
         rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
-    <link rel="stylesheet" href="commander.css?v=12">
+    <link rel="stylesheet" href="css/commander.css?v=12">
     <!-- Mermaid: mapas mentales / diagramas en el chat -->
 
-    <script src="i18n.js"></script>
+    <script src="js/i18n.js"></script>
 </head>
 
 <body>
@@ -346,14 +346,14 @@
     <!-- ════════════════════════════════════
      AUTH + INIT
 ════════════════════════════════════ -->
-    <script src="auth.js"></script>
+    <script src="js/auth.js"></script>
 
     <script>
         lucide.createIcons();
 
         (async () => {
         if (!await Auth.guard()) return;
-        if (!await PageUI.component('#chatContainer', () => PageUI.asset('commander.js'))) return;
+        if (!await PageUI.component('#chatContainer', () => PageUI.asset('js/commander.js'))) return;
         const u = Auth.getUser();
 
         // Carga directa de la interfaz de usuario
