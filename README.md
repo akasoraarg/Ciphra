@@ -1,5 +1,27 @@
 # Ciphra
 
+## Estructura
+
+```
+backend/            API FastAPI
+  main.py           App principal y rutas (chats, amigos, MindShift, Quantum, región…)
+  auth_api.py       Auth con Supabase
+  payments_api.py   Pagos (link MP, transferencia, Stripe, Mercado Pago)
+  security.py       Rate limiting, validación, static files seguros
+  ciphra_encrypter.py
+frontend/           Todo lo que sirve el navegador (montado en "/")
+  *.html            Páginas (index, login, commander, mindshift, quantum…)
+  css/              Estilos
+  js/               Scripts de las páginas
+  assets/           Imágenes (favicon)
+desktop/            App de macOS (pywebview) y script de build del .dmg
+scripts/            Migraciones y utilidades de datos
+  legacy/           Parches viejos ya aplicados, se dejan como referencia
+tests/              Tests de Python y JS
+```
+
+Los datos locales (`users.json`, `chats.json`, `sessions.json`, …), el `.env` y `Ciphra.dmg` siguen en la raíz del repo.
+
 ## Web setup
 
 Use Python 3.12 and run from the repository root:
@@ -43,7 +65,7 @@ existing encrypted files. AI keys are optional for testing authentication.
 Start the web app (the deployment Procfile uses the platform's `PORT`):
 
 ```sh
-uvicorn main:app --host 0.0.0.0 --port 8000
+uvicorn main:app --app-dir backend --host 0.0.0.0 --port 8000
 ```
 
 Open `/login.html`, register a new account, confirm its email, sign in, reload
@@ -73,7 +95,7 @@ recovery/development; it never enables unsigned Google login.
 ## Auth verification
 
 ```sh
-python -m unittest discover -s tests -p 'test_auth*.py'
+python -m unittest discover -s tests -p 'test_*.py'
 node --test tests/auth.test.js
 ```
 
@@ -82,14 +104,14 @@ and Google OAuth must also be verified against the configured project.
 
 ## Frontend loading
 
-Pages remain independent HTML routes. `ui-loading.js` / `ui-loading.css` provide
+Pages remain independent HTML routes. `frontend/js/ui-loading.js` / `frontend/css/ui-loading.css` provide
 layout skeletons with `aria-busy`, reduced-motion support, cleanup and retry states.
 Wrap async view operations with `PageUI.run` or `PageUI.wrap`; authentication uses
 `data-auth-loading` / `data-skeleton` regions. Background polling retains content.
 
-Markdown, math and diagrams load through `ui-rich.js` only when needed. Commander
+Markdown, math and diagrams load through `frontend/js/ui-rich.js` only when needed. Commander
 renders 20 recent messages; “Cargar mensajes anteriores” adds earlier history
-through `ui-history.js`. The existing API still returns one complete chat payload.
+through `frontend/js/ui-history.js`. The existing API still returns one complete chat payload.
 Landing WebGL modules load near the viewport during idle time and skip reduced
 motion/data-saving sessions. Quiz logic starts on form interaction; legal content
 and the diagram editor load only on their routes. Rendered images use native lazy
@@ -99,3 +121,21 @@ For browser helper regressions, open `/login.html` in the shared development
 browser and run `coderabbit-agent-browser eval --stdin < tests/ui.browser.js`.
 The check exercises nested loads, DOM replacement, rejected tasks, retry controls,
 preserved form inputs and the absence of eager rich-renderer scripts.
+
+For rich-text and local-font regressions, open `/login.html` again and run
+`coderabbit-agent-browser eval --stdin < tests/rich.browser.js`. Vendored renderer
+assets live under `frontend/vendor/` and load only when needed.
+
+## Desktop encryption keys
+
+The macOS app uses configured encryption keys when supplied. On a fresh install
+without keys, it generates random credentials, saves them in the user's macOS
+Keychain (`com.ciphra.desktop`, account `encryption-keys`), and passes them to the
+backend on every launch. Keys are not included in the downloadable bundle.
+A Keychain error stops startup; existing local data requires restoring its original
+keys before starting the app. Keep any configured Gemini encryption-key material
+stable, as described above. Native packaging and Keychain integration require macOS.
+
+`python scripts/trigger_encryption.py` validates both original users/chats stores
+strictly before writing. It creates private `.encrypted_backup` copies of both
+files before atomically replacing either one; preserve those backups for recovery.
