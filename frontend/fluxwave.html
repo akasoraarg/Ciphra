@@ -2,8 +2,8 @@
 <html lang="es">
 
 <head>
-    <link rel="stylesheet" href="ui-loading.css">
-    <script src="ui-loading.js"></script>
+    <link rel="stylesheet" href="css/ui-loading.css">
+    <script src="js/ui-loading.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FluxWave by Ciphra — Editor de Diagramas</title>
@@ -15,8 +15,8 @@
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=League+Spartan:wght@600;700&display=swap"
         rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
-    <link rel="stylesheet" href="fluxwave.css">
-    <script src="auth.js"></script>
+    <link rel="stylesheet" href="css/fluxwave.css">
+    <script src="js/auth.js"></script>
 
 </head>
 
@@ -165,7 +165,7 @@
     </div>
 
     <script>
-    (async () => { if (await Auth.guard()) await PageUI.component('.editor-layout', () => import('./diagram-editor.js')); })();
+    (async () => { if (await Auth.guard()) await PageUI.component('.editor-layout', () => import('./js/diagram-editor.js')); })();
     </script>
 </body>
 

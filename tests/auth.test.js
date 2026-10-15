@@ -25,7 +25,7 @@ function setup() {
         status: 200, response: {},
     };
     vm.createContext(context);
-    vm.runInContext(fs.readFileSync('auth.js', 'utf8') + '\nglobalThis.Auth = Auth;', context);
+    vm.runInContext(fs.readFileSync(require('node:path').join(__dirname, '..', 'frontend', 'js', 'auth.js'), 'utf8') + '\nglobalThis.Auth = Auth;', context);
     return { ...context, context, requests, navigations, listeners, auth: context.Auth };
 }
 

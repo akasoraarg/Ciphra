@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <link rel="stylesheet" href="ui-loading.css">
-    <script src="ui-loading.js"></script>
+    <link rel="stylesheet" href="css/ui-loading.css">
+    <script src="js/ui-loading.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ciphra · Presentación</title>
-<link rel="icon" type="image/png" href="favicon.png">
+<link rel="icon" type="image/png" href="assets/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=League+Spartan:wght@700;800;900&display=swap" rel="stylesheet">
@@ -445,7 +445,7 @@ if(window.lucide) lucide.createIcons();
 PageUI.visible('#colorBends', async () => {
   if (matchMedia('(prefers-reduced-motion: reduce)').matches || navigator.connection?.saveData) return;
   await PageUI.asset('https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js');
-  (await import('./presentation-background.js')).initColorBends();
+  (await import('./js/presentation-background.js')).initColorBends();
 });
 </script>
 </body>

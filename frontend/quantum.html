@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <link rel="stylesheet" href="ui-loading.css">
-    <script src="ui-loading.js"></script>
+    <link rel="stylesheet" href="css/ui-loading.css">
+    <script src="js/ui-loading.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quantum | Ciphra</title>
@@ -16,7 +16,7 @@
     <!-- Mermaid: diagramas / mapas mentales (acento pink de Quantum) -->
 
 
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="css/styles.css">
     <style>
         /* Ajustes específicos para Quantum Chat */
         #app-container { height: calc(100vh - 70px); padding: 20px; overflow: hidden; }
@@ -149,7 +149,7 @@
             input, textarea, select { font-size: 16px; }
         }
     </style>
-    <script src="auth.js?v=2.1"></script>
+    <script src="js/auth.js?v=2.1"></script>
     <script>Auth.guard();</script>
     <style>
     /* ── MÓDULO QUANTUM = acento PINK (paleta de la landing) ── */
@@ -247,7 +247,7 @@
 <script>
 PageUI.visible('#q-aurora', async () => {
     if (matchMedia('(prefers-reduced-motion: reduce)').matches || navigator.connection?.saveData) return;
-    await import('./quantum-background.js');
+    await import('./js/quantum-background.js');
 });
 </script>
     <header class="app-header">

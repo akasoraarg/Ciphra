@@ -32,7 +32,10 @@ from ciphra_encrypter import CiphraEncrypter
 from datetime import datetime
  
 
-load_dotenv()
+# Raíz del repo (backend/ vive un nivel abajo). Datos, .env y Ciphra.dmg quedan en la raíz.
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+FRONTEND_DIR = os.path.join(ROOT_DIR, "frontend")
+load_dotenv(os.path.join(ROOT_DIR, ".env"))
 AUTH_PROVIDER = auth_api.provider()
 api_key = os.getenv("GEMINI_API_KEY")
 
@@ -372,7 +375,7 @@ def decrypt_data(data: bytes) -> dict:
             print("⚠️ Fallo crítico de lectura: datos corruptos o clave inválida. Reseteando telemetría local.")
             return {}
 
-CHATS_FILE = "chats.json"
+CHATS_FILE = os.path.join(ROOT_DIR, "chats.json")
 
 def load_chats():
     if os.path.exists(CHATS_FILE):
@@ -386,7 +389,7 @@ def save_chats(chats):
         f.write(encrypt_data(chats))
 
 # --- DOWNLOADS ---
-DOWNLOADS_FILE = "downloads.json"
+DOWNLOADS_FILE = os.path.join(ROOT_DIR, "downloads.json")
 
 def get_download_count() -> int:
     if os.path.exists(DOWNLOADS_FILE):
@@ -405,7 +408,7 @@ def increment_download_count() -> int:
 
 @app.get("/downloads/Ciphra.dmg")
 async def download_dmg():
-    dmg_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Ciphra.dmg")
+    dmg_path = os.path.join(ROOT_DIR, "Ciphra.dmg")
     if not os.path.exists(dmg_path):
         raise HTTPException(404, "Archivo no disponible")
     increment_download_count()
@@ -1142,8 +1145,8 @@ async def delete_chat(chat_id: str, request: Request):
     save_chats(chats)
     return {"status": "deleted"}
 
-USERS_FILE = "users.json"
-SESSIONS_FILE = "sessions.json"
+USERS_FILE = os.path.join(ROOT_DIR, "users.json")
+SESSIONS_FILE = os.path.join(ROOT_DIR, "sessions.json")
 
 def load_users_raw(path):
     if os.path.exists(path):
@@ -1962,7 +1965,7 @@ async def api_region(request: Request):
     }
 
 # SecureStaticFiles bloquea código fuente, datos y secretos (.py, .json, .env, backups…).
-app.mount("/", SecureStaticFiles(directory="./", html=True), name="static")
+app.mount("/", SecureStaticFiles(directory=FRONTEND_DIR, html=True), name="static")
 
 if __name__ == "__main__":
     import uvicorn

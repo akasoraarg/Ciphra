@@ -5,7 +5,8 @@ import shutil
 print("🚀 Starting Ciphra macOS App Packaging System...")
 
 # Paths
-workspace_dir = "/Users/verakade/.gemini/antigravity/scratch/mindshift"
+# Raíz del proyecto (este script vive en desktop/).
+workspace_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 app_name = "Ciphra"
 
 app_bundle = f"{workspace_dir}/{app_name}.app"
@@ -79,45 +80,24 @@ if os.path.exists(app_resource_dir):
 
 os.makedirs(app_resource_dir, exist_ok=True)
 
-files_to_copy = [
-    # Backend
-    "main.py",
-    "auth_api.py",
-    "payments_api.py",
-    "users.json",
-    "chats.json",
-    "users_plain.json",
-    "encrypt_sessions.py",
-    "trigger_encryption.py",
-    "ciphra_encrypter.py",
+# Carpetas del proyecto que van dentro del bundle (se copian enteras).
+dirs_to_copy = ["backend", "frontend", "desktop"]
 
-    # Frontend
-    "index.html",
-    "login.html",
-    "register.html",
-    "onboarding.html",
-    "mindshift.html",
-    "commander.html",
-    "sandbox.html",
-    "checkout.html",
-    "quantum.html",
-    "fluxwave.html",
+# Archivos sueltos de la raíz. NUNCA incluir datos de usuarios (users.json, chats.json,
+# sessions.json, users_plain.json...) ni .env: el .dmg es descargable públicamente.
+# La app arranca con datos vacíos y los crea al usarse.
+files_to_copy = []
 
-    # Assets / JS / CSS
-    "styles.css",
-    "ciphra.css",
-    "commander.css",
-    "fluxwave.css",
-    "app.js",
-    "auth.js",
-    "commander.js",
-    "sandbox.js",
-    "diagram-editor.js",
-    "favicon.png",
-
-    # Desktop wrapper
-    "desktop.py",
-]
+for d in dirs_to_copy:
+    src = f"{workspace_dir}/{d}"
+    dst = f"{app_resource_dir}/{d}"
+    if os.path.exists(src):
+        if os.path.exists(dst):
+            shutil.rmtree(dst)
+        shutil.copytree(src, dst, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+        print(f"✅ Copied folder: {d}/")
+    else:
+        print(f"⚠️ Missing folder (skipped): {d}/")
 
 for file in files_to_copy:
     src = f"{workspace_dir}/{file}"
@@ -164,7 +144,7 @@ fi
 
 # Arrancar uvicorn con working directory explícito
 cd "$APP_DIR"
-$ARCH_CMD "$APP_DIR/venv/bin/python3" "$APP_DIR/desktop.py" > /tmp/ciphra_desktop.log 2>&1
+$ARCH_CMD "$APP_DIR/venv/bin/python3" "$APP_DIR/desktop/desktop.py" > /tmp/ciphra_desktop.log 2>&1
 
 exit 0
 """
@@ -178,7 +158,7 @@ os.chmod(launch_script_path, 0o755)
 print("🔑 Launch script written + marked executable.")
 
 # 6. Generate ciphra.icns icon
-favicon_path = f"{workspace_dir}/favicon.png"
+favicon_path = f"{workspace_dir}/frontend/assets/favicon.png"
 iconset_dir = f"{workspace_dir}/ciphra.iconset"
 
 if os.path.exists(favicon_path):
