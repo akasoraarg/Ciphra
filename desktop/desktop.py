@@ -6,6 +6,7 @@ import sys
 import urllib.request
 import os
 from dotenv import load_dotenv
+from keychain import encryption_environment
 
 # Cargar .env desde la carpeta del proyecto
 # desktop/ vive un nivel abajo de la raíz del proyecto (donde están .env, venv y backend/).
@@ -26,6 +27,8 @@ def start_server():
                     key, val = line.split("=", 1)
                     env[key.strip()] = val.strip()
     
+    env = encryption_environment(env, BASE_DIR)
+
     subprocess.Popen([
         os.path.join(BASE_DIR, "venv/bin/uvicorn"),
         "main:app",

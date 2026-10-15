@@ -324,8 +324,8 @@ function appendMessage(role, content, id = null, sources = null, thinking = null
     if (role === 'assistant' && !id) {
         const body = document.createElement('div');
         msgDiv.appendChild(body);
-        PageUI.visible(body, () => PageUI.rich(body, content));
         body.textContent = content || '';
+        PageUI.rich(body, content);
         if (sources && sources.length) {
             msgDiv.insertBefore(buildSourcesChip(sources), msgDiv.firstChild);
         }
