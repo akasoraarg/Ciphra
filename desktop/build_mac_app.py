@@ -83,12 +83,10 @@ os.makedirs(app_resource_dir, exist_ok=True)
 # Carpetas del proyecto que van dentro del bundle (se copian enteras).
 dirs_to_copy = ["backend", "frontend", "desktop"]
 
-# Archivos sueltos de la raíz (datos locales opcionales y config).
-files_to_copy = [
-    "users.json",
-    "chats.json",
-    "users_plain.json",
-]
+# Archivos sueltos de la raíz. NUNCA incluir datos de usuarios (users.json, chats.json,
+# sessions.json, users_plain.json...) ni .env: el .dmg es descargable públicamente.
+# La app arranca con datos vacíos y los crea al usarse.
+files_to_copy = []
 
 for d in dirs_to_copy:
     src = f"{workspace_dir}/{d}"
